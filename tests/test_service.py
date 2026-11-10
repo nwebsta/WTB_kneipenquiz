@@ -256,17 +256,49 @@ def test_end_game_and_final_ranking(g):
     assert "vorbei" in g.handle_location(a, *SAILOR).text
 
 
-def test_end_time_auto_end(g):
+def test_game_duration_auto_end(g):
+    assert g.set_duration("3:00").ok and g.duration_min() == 180
+    assert not g.set_duration("abc").ok
+    assert "3 Stunden" in g.rules_text()                       # vor dem Start: nur Dauer
     run(g.start_game("anna"))
-    # Endzeit (lokale Uhrzeit) 20 Minuten in der Zukunft
-    local_now = g.clock_obj.now.astimezone(g.s.tz)
-    target = (local_now + timedelta(minutes=20)).strftime("%H:%M")
-    g.set_end_time(target)
+    assert any("<b>3 Stunden</b> Spielzeit" in t for _, t in g.notifier.sent)   # Startnachricht
+    assert g.end_time() == g.clock_obj.now + timedelta(minutes=180)
+    g.clock_obj.advance(minutes=155)
     run(g.sweep())
-    assert any("30 Minuten" in t for c, t in g.notifier.sent)
-    g.clock_obj.advance(minutes=21)
+    assert any("30 Minuten" in t for _, t in g.notifier.sent)
+    assert "Noch <b>25 Min</b> Spielzeit" in g.stand_text(tid(g, "Alpha"))
+    g.clock_obj.advance(minutes=26)
     run(g.sweep())
     assert g.phase == "ended"
+
+
+def test_pause_stops_game_clock_and_event_cards(g):
+    g.set_duration("1:00")
+    run(g.start_game("anna"))
+    a = tid(g, "Alpha")
+    g.clock_obj.advance(minutes=40)
+    run(g.pause_game("anna"))
+    g.clock_obj.advance(minutes=30)                               # Pause zählt nicht
+    run(g.sweep())
+    assert g.phase == "paused"
+    assert g.game_elapsed() == timedelta(minutes=40)
+    run(g.resume_game("anna"))
+    # Ereigniskarte bei 0:45 Spielzeit, also erst 5 Minuten nach der Pause fällig
+    assert "0,5" not in g.checkin(a, "die-eule", *EULE).message
+    g.clock_obj.advance(minutes=6)
+    assert "0,5" in g.checkin(a, "sailors-pub", *SAILOR).message
+    assert g.end_time() == g.clock_obj.now + timedelta(minutes=14)
+    g.clock_obj.advance(minutes=15)
+    run(g.sweep())
+    assert g.phase == "ended"
+
+
+def test_no_duration_means_no_auto_end(g):
+    g.set_duration("")
+    run(g.start_game("anna"))
+    g.clock_obj.advance(hours=10)
+    run(g.sweep())
+    assert g.phase == "running" and g.end_time() is None
 
 
 def test_manual_correction_and_export(g):

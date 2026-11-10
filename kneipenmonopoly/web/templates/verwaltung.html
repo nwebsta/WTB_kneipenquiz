@@ -31,9 +31,13 @@
     {% endif %}
   </div>
   <div class="row">
-    <form method="post" action="/verwaltung/endzeit" class="row">
-      <label>Spielende (HH:MM) <input name="hhmm" value="{{ end_time }}" placeholder="23:30" size="6"></label>
+    <form method="post" action="/verwaltung/spieldauer" class="row">
+      <label>Spieldauer (H:MM) <input name="dauer" value="{{ clock.duration_hm }}" placeholder="3:00" size="6"></label>
       <button class="btn">Speichern</button>
+      <span class="small muted">
+        {% if clock.remaining %}gespielt {{ clock.elapsed }}, noch {{ clock.remaining }}, Schluss ca. {{ clock.end_time }} Uhr
+        {% elif clock.duration %}läuft ab Spielstart, Pausen halten die Uhr an{% else %}kein automatisches Ende{% endif %}
+      </span>
     </form>
     <form method="post" action="/verwaltung/verdeckt" class="row">
       <label class="check"><input type="checkbox" name="hidden" value="1" {% if hidden %}checked{% endif %}> Punktestand für Spieler verdecken</label>
@@ -175,7 +179,7 @@
 
 <section class="card" id="ereignisse">
   <h2>Ereigniskarten</h2>
-  <p class="muted small">Zeit ab Spielstart (H:MM). <b>Nächster Check-in:</b> Jedes Team sieht die Karte beim ersten
+  <p class="muted small">Zeit = Spielzeit ab Start (H:MM). Pausen zählen nicht mit, die Karten verschieben sich entsprechend. <b>Nächster Check-in:</b> Jedes Team sieht die Karte beim ersten
      Kneipen-Check-in nach dieser Zeit, einmal pro Team. <b>Doppelte Punkte:</b> wird sofort an alle geschickt; Fotos und
      Anfragen ab dieser Uhrzeit zählen {{ game.s.rules.double_factor }}-fach (es zählt die Uploadzeit).</p>
   <div class="scroll">

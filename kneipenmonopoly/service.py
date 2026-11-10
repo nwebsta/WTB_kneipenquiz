@@ -46,6 +46,16 @@ def parse_iso(s: str) -> datetime:
     return datetime.fromisoformat(s)
 
 
+def fmt_duration(minutes: int) -> str:
+    """180 -> „3 Stunden“, 150 -> „2 Std 30 Min“, 45 -> „45 Min“."""
+    h, m = divmod(int(minutes), 60)
+    if h and not m:
+        return "1 Stunde" if h == 1 else f"{h} Stunden"
+    if h:
+        return f"{h} Std {m} Min"
+    return f"{m} Min"
+
+
 class Notifier(Protocol):
     async def send_text(self, chat_id: int, text: str, buttons: list[tuple[str, str]] | None = None) -> None: ...
     async def send_map(self, chat_id: int, caption: str) -> None: ...
@@ -383,34 +393,91 @@ class Game:
     def set_scores_hidden(self, hidden: bool) -> None:
         self.db.set_kv("scores_hidden", "1" if hidden else "0")
 
-    def end_time(self) -> datetime | None:
-        v = self.db.get_kv("end_time")
-        return parse_iso(v) if v else None
+    # =========================================================================
+    # Spieluhr: Spieldauer ab Start, Pausen halten die Uhr an
+    # =========================================================================
+    def duration_min(self) -> int | None:
+        v = self.db.get_kv("duration_min")
+        if v is None:
+            return self.s.game_duration_min
+        return int(v) if v else None
 
-    def set_end_time(self, hhmm: str | None) -> ActionResult:
-        if not hhmm:
-            self.db.set_kv("end_time", None)
-            return ActionResult(True, "Endzeit entfernt.")
+    def set_duration(self, raw: str | None) -> ActionResult:
+        """Spieldauer setzen, z.B. „3:00“ oder „180“ (Minuten). Leer = kein automatisches Ende."""
+        raw = (raw or "").strip()
+        if not raw:
+            self.db.set_kv("duration_min", "")
+            return ActionResult(True, "Spieldauer entfernt, das Spiel endet nur per Klick.")
         try:
-            h, m = (int(x) for x in hhmm.split(":"))
+            if ":" in raw:
+                h, m = raw.split(":", 1)
+                minutes = int(h) * 60 + int(m)
+            else:
+                minutes = int(raw)
         except ValueError:
-            return ActionResult(False, "Format HH:MM, z.B. 23:30.")
-        now_local = self.clock().astimezone(self.s.tz)
-        end = now_local.replace(hour=h, minute=m, second=0, microsecond=0)
-        if end <= now_local:
-            end += timedelta(days=1)
-        self.db.set_kv("end_time", iso(end))
+            return ActionResult(False, "Spieldauer bitte als H:MM angeben, z.B. 3:00.")
+        if minutes <= 0:
+            return ActionResult(False, "Die Spieldauer muss größer als 0 sein.")
+        self.db.set_kv("duration_min", str(minutes))
         self.db.set_kv("warned_30", None)
         self.db.set_kv("warned_10", None)
-        return ActionResult(True, f"Spielende: {end.strftime('%d.%m. %H:%M')}.")
+        end = self.end_time()
+        return ActionResult(True, f"Spieldauer: {fmt_duration(minutes)}"
+                                  + (f", Schluss ca. um {self.hm(end)} Uhr." if end else "."))
+
+    def paused_seconds(self, now: datetime | None = None) -> float:
+        """Summe aller Pausen seit Spielstart, eine laufende Pause eingeschlossen."""
+        now = now or self.clock()
+        total, since = 0.0, None
+        for e in self.db.events():
+            if e.type == R.GAME_PAUSED and since is None:
+                since = parse_iso(e.ts)
+            elif e.type == R.GAME_RESUMED and since is not None:
+                total += (parse_iso(e.ts) - since).total_seconds()
+                since = None
+        if since is not None:
+            total += (now - since).total_seconds()
+        return total
+
+    def game_elapsed(self, now: datetime | None = None) -> timedelta | None:
+        """Gespielte Zeit seit Start ohne Pausen. None vor dem Start."""
+        started = self.state().started_at
+        if not started:
+            return None
+        now = now or self.clock()
+        return now - parse_iso(started) - timedelta(seconds=self.paused_seconds(now))
+
+    def game_remaining(self) -> timedelta | None:
+        dur, elapsed = self.duration_min(), self.game_elapsed()
+        if dur is None or elapsed is None:
+            return None
+        return timedelta(minutes=dur) - elapsed
+
+    def end_time(self) -> datetime | None:
+        """Voraussichtliches Spielende als Uhrzeit (verschiebt sich durch Pausen)."""
+        left = self.game_remaining()
+        return self.clock() + left if left is not None else None
+
+    def at_game_time(self, minutes: int) -> datetime | None:
+        """Uhrzeit, zu der die Spieluhr `minutes` erreicht (hat). None vor dem Start."""
+        elapsed = self.game_elapsed()
+        if elapsed is None:
+            return None
+        return self.clock() + (timedelta(minutes=minutes) - elapsed)
 
     async def start_game(self, admin: str) -> ActionResult:
         if self.phase != "setup":
             return ActionResult(False, "Das Spiel wurde schon gestartet.")
         self.add_event(admin, R.GAME_STARTED, {})
+        self.db.set_kv("warned_30", None)
+        self.db.set_kv("warned_10", None)
+        start_text = self.t("spiel.start")
+        if self.duration_min():
+            start_text += "\n" + self.t("spiel.start_dauer", dauer=fmt_duration(self.duration_min()),
+                                        uhrzeit=self.hm(self.end_time()))
         for t in self.teams():
-            if t["chat_id"] is not None:
-                await self.send_team(t["id"], self.t("spiel.start"))
+            if t["chat_id"] is not None or t["id"] in self.muted_teams:
+                await self.send_team(t["id"], start_text)
                 await self.send_welcome_pack(t["id"])
         return ActionResult(True, "Spiel gestartet, Karte und Regeln verschickt.")
 
@@ -810,22 +877,22 @@ class Game:
         self.db.run("DELETE FROM event_cards WHERE id=?", (card_id,))
 
     def card_due(self, card) -> datetime | None:
-        started = self.state().started_at
-        if not started:
-            return None
-        return parse_iso(started) + timedelta(minutes=int(card["offset_min"]))
+        """Uhrzeit, zu der die Karte fällig ist/war (nach Spielzeit, Pausen verschieben sie)."""
+        return self.at_game_time(int(card["offset_min"]))
+
+    def card_is_due(self, card) -> bool:
+        elapsed = self.game_elapsed()
+        return elapsed is not None and elapsed >= timedelta(minutes=int(card["offset_min"]))
 
     def card_fired(self, card) -> bool:
         return self.db.get_kv(f"event_card_fired_{card['id']}") is not None
 
     def pending_event_card(self, team_id: int):
         """Fällige Karte für den nächsten Kneipen-Check-in dieses Teams (älteste zuerst)."""
-        now = self.clock()
         for card in self.event_cards():
             if card["kind"] != "next_checkin":
                 continue
-            due = self.card_due(card)
-            if due is None or due > now:
+            if not self.card_is_due(card):
                 continue
             used = self.db.one("SELECT id FROM checkins WHERE team_id=? AND event_card_id=? "
                                "AND status IN ('open','submitted','done')", (team_id, card["id"]))
@@ -838,11 +905,9 @@ class Game:
             return
         now = self.clock()
         for card in self.event_cards():
-            if card["kind"] == "next_checkin" or self.card_fired(card):
+            if card["kind"] == "next_checkin" or self.card_fired(card) or not self.card_is_due(card):
                 continue
-            due = self.card_due(card)
-            if due is None or due > now:
-                continue
+            due = self.card_due(card) or now
             self.db.set_kv(f"event_card_fired_{card['id']}", iso(now))
             if card["kind"] == "double_points":
                 # Zeitstempel = fällige Uhrzeit: Fotos, die ab dann hochgeladen wurden, zählen doppelt.
@@ -1154,9 +1219,10 @@ class Game:
             for c in expired:
                 self.db.run("UPDATE checkins SET status='expired' WHERE id=? AND status='open'", (c["id"],))
                 await self.send_team(c["team_id"], self.t("checkin.abgelaufen", bar=self.spot(c["spot_id"]).name))
-        end = self.end_time()
-        if end and self.phase in ("running", "paused"):
-            left = end - now
+        # Ende und Warnungen nach Spielzeit. In der Pause steht die Uhr, daher nur im laufenden Spiel.
+        left = self.game_remaining()
+        if left is not None and self.phase == "running":
+            end = self.end_time()
             if left <= timedelta(0):
                 await self.end_game("system")
             elif left <= timedelta(minutes=10) and not self.db.get_kv("warned_10"):
@@ -1173,7 +1239,14 @@ class Game:
     def rules_text(self) -> str:
         c = self.s.rules
         T = self.t
-        end = self.end_time()
+        dur = self.duration_min()
+        end = self.end_time() if self.phase in ("running", "paused") else None
+        if dur and end:
+            spielzeit = Raw(T("regeln.endzeit", dauer=fmt_duration(dur), uhrzeit=self.hm(end)))
+        elif dur:
+            spielzeit = Raw(T("regeln.spielzeit", dauer=fmt_duration(dur)))
+        else:
+            spielzeit = Raw("")
         return T(
             "regeln.text",
             frist=self.s.checkin_timeout_min, frei=c.points_free_field, miete=c.points_owner,
@@ -1183,7 +1256,7 @@ class Game:
             bahnhof_punkte=", ".join(str(p) for p in c.station_points),
             aufgabe=c.task_bonus, aktion_plus=c.action_success, aktion_minus=c.action_fail,
             abklingzeit=self.s.cooldown_min,
-            endzeit=Raw(T("regeln.endzeit", uhrzeit=self.hm(end))) if end else Raw(""),
+            endzeit=spielzeit,
         )
 
     def help_text(self) -> str:
@@ -1231,6 +1304,10 @@ class Game:
             lines.append(T("stand.aktionskarten_uebrig", anzahl=len(self.remaining_action_cards(team_id))))
         if st.multiplier != 1:
             lines.append(T("stand.multiplikator", faktor=st.multiplier))
+        left = self.game_remaining()
+        if left is not None and self.phase in ("running", "paused"):
+            lines += ["", T("stand.restzeit", rest=fmt_duration(max(0, int(left.total_seconds() // 60))),
+                            uhrzeit=self.hm(self.end_time()))]
         return "\n".join(lines)
 
     def felder_text(self) -> str:

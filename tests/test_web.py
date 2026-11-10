@@ -101,8 +101,10 @@ def test_full_admin_flow(ctx):
     assert game.spot("zucca").name == "Zweibar"
     client.post("/verwaltung/feld/gatz/deaktivieren")
     assert not game.spot("gatz").active
-    client.post("/verwaltung/endzeit", data={"hhmm": "23:30"})
-    assert game.end_time() is not None
+    client.post("/verwaltung/spieldauer", data={"dauer": "3:00"})
+    assert game.end_time() is not None and game.duration_min() == 180
+    dash = client.get("/partials/dashboard").text
+    assert "⏱️ noch 2:59" in dash or "⏱️ noch 3:00" in dash
     assert client.get("/verwaltung").status_code == 200
 
     proto = client.get("/protokoll").text

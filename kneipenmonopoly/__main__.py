@@ -47,6 +47,11 @@ def main() -> int:
         problems.append(str(e))
     if not s.map_pdf_path.exists():
         logging.warning("Karten-PDF nicht gefunden: %s", s.map_pdf_path)
+    if bool(s.ssl_certfile) != bool(s.ssl_keyfile):
+        problems.append("Für HTTPS müssen SSL_CERTFILE und SSL_KEYFILE beide gesetzt sein")
+    for label, f in (("SSL_CERTFILE", s.ssl_certfile), ("SSL_KEYFILE", s.ssl_keyfile)):
+        if f and not f.exists():
+            problems.append(f"{label} nicht gefunden: {f}")
     if problems:
         for p in problems:
             logging.error(p)
@@ -55,8 +60,10 @@ def main() -> int:
     from .web.app import create_app
 
     app = create_app(s)
-    logging.info("Admin-Seite: http://%s:%s/", "localhost" if s.host == "0.0.0.0" else s.host, s.port)
-    uvicorn.run(app, host=s.host, port=s.port, log_level="warning", proxy_headers=True)
+    scheme = "https" if s.https else "http"
+    logging.info("Admin-Seite: %s://%s:%s/", scheme, "localhost" if s.host == "0.0.0.0" else s.host, s.port)
+    ssl = {"ssl_certfile": str(s.ssl_certfile), "ssl_keyfile": str(s.ssl_keyfile)} if s.https else {}
+    uvicorn.run(app, host=s.host, port=s.port, log_level="warning", proxy_headers=True, **ssl)
     return 0
 
 

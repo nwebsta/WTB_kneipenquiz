@@ -1,6 +1,10 @@
 .venv/
 .env
 data/
+certs/
+# bearbeitbare Texte: werden beim ersten Start aus kneipenmonopoly/texte_standard.toml angelegt
+texte.toml
 __pycache__/
 *.pyc
 .pytest_cache/
+.claude/

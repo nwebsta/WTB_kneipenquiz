@@ -55,7 +55,7 @@ Weitere Regeln:
 - **Gleichzeitig in derselben freien Bar:** Das zuerst *eingereichte* Foto gewinnt. Die Webseite sperrt
   „Gültig“ für ein jüngeres Foto, bis das ältere geprüft ist.
 - **Pause:** keine Check-ins, laufende Fristen werden angehalten.
-- **Spielende:** feste Uhrzeit (in der Verwaltung einstellbar), Warnungen 30 und 10 Minuten vorher.
+- **Spielzeit:** Eine Spieldauer, z.B. 3:00, startet mit dem Spiel. Eine Pause hält die Spieluhr an und verlängert das Spiel. Warnungen kommen 30 und 10 Minuten vor Ende. Ereigniskarten richten sich ebenfalls nach der Spielzeit.
   Danach eingereichte Fotos zählen nicht. Schon eingereichte werden noch geprüft, danach kommt der Endstand.
 - **Sieger:** das Team mit den meisten Punkten. Bei Gleichstand teilen sich die Teams den Platz.
 - **Reserve-Bars** sind nur Ersatz. Ein Ersatzfeld übernimmt Nummer, Straße und Besitzer.
@@ -146,13 +146,14 @@ Bei einem Konfigurationsfehler bleibt das Fenster offen und zeigt die Meldung an
 ./start.sh           # Linux / Raspberry Pi
 ```
 
-Beide Skripte legen das venv beim ersten Mal selbst an und starten den Prozess nach einem Absturz neu.
-Direkt geht es auch mit `.venv\Scripts\python -m kneipenmonopoly`.
+Beide Skripte legen das venv beim ersten Mal selbst an, gleichen die Pakete bei jedem Start ab und starten
+den Prozess nach einem Absturz neu. Fehlt unter Windows Python 3.11+, installiert `start.ps1` Python 3.12 über
+`winget`. Direkt geht es auch mit `.venv\Scripts\python -m kneipenmonopoly`.
 
 Die Admin-Seite läuft auf **http://localhost:8000/**. Der Bot nutzt Long-Polling und braucht nur
 ausgehendes Internet. Es muss kein Port nach außen geöffnet werden.
 
-Auf dem Raspberry Pi als Dienst mit Autostart: siehe `deploy/kneipenmonopoly.service`.
+Auf einem Linux-Server oder Raspberry Pi als Dienst mit Autostart: siehe Abschnitt **Auf einem Server installieren**.
 
 **Neustartfest:** Alles steht in SQLite (`data/kneipenmonopoly.sqlite3`). Nach einem Neustart sind
 Spielstand, offene Check-ins, Fristen und die Prüf-Warteschlange wieder da. Telegram liefert Nachrichten,
@@ -160,6 +161,74 @@ die während des Neustarts ankamen, nach.
 
 **Laptop als Server:** Energiesparmodus und Ruhezustand ausschalten, Netzteil dranlassen.
 Ein mobiler Hotspot reicht als Internet.
+
+### Auf einem Server installieren (Linux)
+
+Für Debian, Ubuntu und Raspberry Pi OS gibt es `deploy/install.sh`. Das Skript macht **Installation und Update**:
+
+- **Pakete:** Es installiert alle Systempakete per `apt`. Ist das System-Python älter als 3.11, etwa auf Ubuntu 22.04,
+  lädt es Python 3.12 über `uv` herunter.
+- **Programm:** Es legt das venv an, installiert die Python-Pakete und den Dienst-Benutzer `kneipe`.
+- **Beim ersten Lauf** fragt es nach Bot-Token, Admin-Passwort, **Port** und **HTTP oder HTTPS**:
+  1. HTTP ohne Verschlüsselung, etwa nur über VPN
+  2. HTTPS mit **eigenem Zertifikat**: Pfade zu Zertifikat und Schlüssel im PEM-Format angeben
+  3. HTTPS mit **selbst erzeugtem Zertifikat**: ohne Domain, der Browser warnt einmal
+- **Vor jedem Neustart** laufen die Tests, und die Datenbank wird gesichert. Es bleiben die letzten 10 Sicherungen in `data/backups/`.
+- **Dienst:** Es richtet einen systemd-Dienst mit Autostart ein, startet ihn und prüft, ob die Seite antwortet.
+
+**1. Code nach GitHub pushen** (auf deinem Windows-Rechner; das Repository ist `github.com/nwebsta/WTB_kneipenquiz`):
+
+```powershell
+cd D:\Projekte\WTB_kneipenquiz
+git rm --cached texte.toml        # nur einmal nötig: Texte nicht mehr im Repository verfolgen
+git add .
+git commit -m "Spielzeit, HTTPS, Server-Installation"
+git push
+```
+
+`.env`, `data/`, Zertifikate und `texte.toml` landen nicht im Repository (siehe `.gitignore`).
+Die Texte legt der Server beim ersten Start aus den Standardtexten an. Angepasste Texte kopierst du einmalig
+mit `scp texte.toml BENUTZER@SERVER:/tmp/` und `sudo cp /tmp/texte.toml /opt/kneipenmonopoly/` hinüber.
+
+**2. Auf dem Server initial holen und installieren:**
+
+```bash
+sudo apt-get update && sudo apt-get install -y git
+sudo git clone https://github.com/nwebsta/WTB_kneipenquiz.git /opt/kneipenmonopoly
+sudo bash /opt/kneipenmonopoly/deploy/install.sh
+```
+
+Bei einem **privaten Repository** fragt `git clone` nach Benutzername und Passwort. Als Passwort gibst du ein
+GitHub-Token mit Leserecht ein (GitHub → Settings → Developer settings → Fine-grained tokens, Recht „Contents: Read“).
+
+**3. Updates:** Neuen Stand vom Windows-Rechner pushen (`git add .`, `git commit -m "…"`, `git push`), dann auf dem Server:
+
+```bash
+sudo bash /opt/kneipenmonopoly/deploy/install.sh
+```
+
+Das holt den Code per `git pull`, aktualisiert die Pakete, testet, sichert die Datenbank und startet neu.
+Spielstand, `.env` und `texte.toml` bleiben erhalten.
+
+| Option | Wirkung |
+|---|---|
+| `--configure` | Port, HTTP/HTTPS, Token und Passwort neu abfragen |
+| `--tailscale` | Tailscale installieren und die Seite nur im VPN anbieten |
+| `--no-tests` | Tests überspringen |
+| `--no-pull` | keinen `git pull` machen |
+
+Nützliche Befehle auf dem Server:
+
+```bash
+systemctl status kneipenmonopoly        # läuft der Dienst?
+journalctl -u kneipenmonopoly -f        # Log live
+sudo nano /opt/kneipenmonopoly/.env     # Einstellungen, danach: sudo systemctl restart kneipenmonopoly
+sudo nano /opt/kneipenmonopoly/texte.toml   # Texte, wirken ohne Neustart
+```
+
+**Achtung:** Auf einem Server im Internet ist die Seite mit `HOST=0.0.0.0` öffentlich erreichbar und nur durch
+das Passwort geschützt. Besser ist `--tailscale`, oder du lässt den Port in der Firewall nur aus dem VPN zu.
+Mit HTTPS sind Passwort und Fotos zumindest verschlüsselt unterwegs.
 
 ---
 
@@ -206,7 +275,7 @@ Läuft der Server im Heimnetz, verbinden sich die Admins per VPN ins Heimnetz un
 3. Optional **Aufgaben** pro Feld und **Zufallsaufgaben** pflegen.
 4. **Aktionskarten** anlegen und **Ereigniskarten** prüfen.
 5. Alle Admins, die Videoanrufe machen, treten den Team-Gruppen in Telegram bei.
-6. **Spielende** (HH:MM) eintragen.
+6. **Spieldauer** (H:MM, z.B. 3:00) eintragen. Beim Start bekommen die Teams „Ihr habt 3 Stunden Spielzeit, Schluss ca. um …“.
 
 **Start:** Verwaltung → **Spiel starten**. Alle Teams bekommen die Karten-PDF und die Regeln.
 
@@ -242,7 +311,7 @@ Läuft der Server im Heimnetz, verbinden sich die Admins per VPN ins Heimnetz un
   Protokoll → **↩️** nimmt eine Freigabe oder Korrektur zurück. Der Stand wird komplett neu berechnet,
   inklusive Straßenbonus. Betroffene Teams bekommen eine Nachricht.
 
-**Ende:** automatisch zur Endzeit oder per **Spiel beenden**. Sobald keine Fotos mehr offen sind, geht der
+**Ende:** automatisch nach Ablauf der Spielzeit oder per **Spiel beenden**. Sobald keine Fotos mehr offen sind, geht der
 Endstand an alle Teams. Ein Klick auf „Endstand nochmal senden“ wiederholt das.
 
 **Danach:** Protokoll → **Export** (CSV/JSON) sichern. Dann Verwaltung → **Datenschutz** →
@@ -331,7 +400,7 @@ Meldungen der Admin-Webseite, etwa „Freigegeben“, stehen nicht in der Datei.
 | Datei | Prüft |
 |---|---|
 | `tests/test_rules.py` | Punkte-Logik als reine Funktion: alle Fälle aus der Regeltabelle, Straßenbonus, Bahnhöfe, Rückgängig, Reihenfolge nach Einreichzeit, Ersatz und Deaktivierung, Rangliste |
-| `tests/test_service.py` | Join, Radius, Mehrfachauswahl, eigene Bar, Abklingzeit, doppelte Freigabe, Sperre bei gleichzeitigem Check-in, Ablehnung, Timeout, Pause, Endzeit, Export, Löschen |
+| `tests/test_service.py` | Join, Radius, Mehrfachauswahl, eigene Bar, Abklingzeit, doppelte Freigabe, Sperre bei gleichzeitigem Check-in, Ablehnung, Timeout, Pause, Spielzeit, Export, Löschen |
 | `tests/test_web.py` | Login-Schutz, alle Seiten, Freigabe über die Webseite, Korrekturen, Protokoll, Export |
 
 Manuell ohne Telegram: `BOT_TOKEN` leer lassen. Dann läuft nur die Webseite.
@@ -403,7 +472,7 @@ Danach wieder auf `data` umstellen.
 **Absturz und Ende**
 
 - [ ] Prozess mitten im Spiel hart beenden und neu starten: gleicher Stand, Warteschlange noch da.
-- [ ] Endzeit 15 Minuten in die Zukunft setzen: Warnungen kommen, Spiel endet automatisch, Endstand wird verschickt.
+- [ ] Spieldauer auf 0:35 setzen und Spiel starten: Nach 5 Minuten kommt die 30-Minuten-Warnung. Mit Pause prüfen, dass die Uhr steht. Am Ende kommt der Endstand automatisch.
 - [ ] Export CSV und JSON herunterladen und öffnen.
 - [ ] **Datenschutz-Löschen** ausprobieren, nur in der Probe-Datenbank.
 
@@ -411,7 +480,7 @@ Danach wieder auf `data` umstellen.
 
 - [ ] `DATA_DIR` zurück auf `data` stellen oder Verwaltung → **Spiel zurücksetzen**.
 - [ ] **Testmodus aus.** Oben auf der Admin-Seite darf kein gelbes Banner mehr stehen.
-- [ ] Echte Teams und Codes anlegen, Endzeit setzen, Nordbahnhof prüfen.
+- [ ] Echte Teams und Codes anlegen, Spieldauer setzen, Nordbahnhof prüfen.
 - [ ] `CHECKIN_TIMEOUT_MIN` und `CHECKIN_RADIUS_M` auf die Abendwerte zurücksetzen.
 
 ---
@@ -431,11 +500,11 @@ kneipenmonopoly/
   web/           FastAPI + Jinja2 + HTMX, Leaflet-Karte
   __main__.py    Start, Logging, Prüfung der Konfiguration
 tests/           pytest
-deploy/          systemd-Dienst
+deploy/          install.sh: Installation und Update auf Linux-Servern
 ```
 
 - **Ein Prozess:** FastAPI startet beim Hochfahren den Telegram-Bot und eine Hintergrundschleife für
-  Fristen und Endzeit. Beides läuft in derselben asyncio-Schleife.
+  Fristen, Ereigniskarten und Spielzeit. Beides läuft in derselben asyncio-Schleife.
 - **Ereignisse:** `GAME_STARTED`, `GAME_PAUSED`, `GAME_RESUMED`, `GAME_ENDED`, `VISIT_APPROVED`, `EVENT_REVOKED`,
   `OWNER_SET`, `POINTS_ADJUSTED`, `FIELD_DEACTIVATED`, `FIELD_REACTIVATED`, `FIELD_REPLACED`, `MULTIPLIER_SET`,
   `ACTION_DECIDED`.

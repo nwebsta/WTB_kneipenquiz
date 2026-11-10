@@ -19,7 +19,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from ..config import Settings
 from ..db import DB
 from ..gamedata import load_game_data
-from ..service import EVENT_CARD_KINDS, PHASE_LABEL, Game, parse_iso
+from ..service import EVENT_CARD_KINDS, PHASE_LABEL, Game, fmt_duration, parse_iso
 from ..simulation import SPEEDS, Simulator
 
 log = logging.getLogger(__name__)
@@ -40,6 +40,12 @@ PHOTO_CACHE = {"Cache-Control": "private, no-cache"}
 
 class NotLoggedIn(Exception):
     pass
+
+
+def _hm_span(td) -> str:
+    """timedelta -> „2:13“ (Stunden:Minuten), negativ als 0:00."""
+    minutes = max(0, int(td.total_seconds() // 60))
+    return f"{minutes // 60}:{minutes % 60:02d}"
 
 
 def _image_type(path: str) -> str:
@@ -116,8 +122,9 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     secret = settings.session_secret or secrets.token_hex(32)
+    # Bei HTTPS wird das Login-Cookie nur verschlüsselt übertragen.
     app.add_middleware(SessionMiddleware, secret_key=secret, same_site="strict", max_age=14 * 24 * 3600,
-                       session_cookie="km_session")
+                       session_cookie="km_session", https_only=settings.https)
     app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
     # ---------------------------------------------------------------- Helfer
@@ -180,16 +187,26 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
             if c["kind"] == "next_checkin":
                 n = g.db.one("SELECT COUNT(DISTINCT team_id) AS n FROM checkins WHERE event_card_id=? "
                              "AND status IN ('open','submitted','done')", (c["id"],))["n"]
-                status = f"bei {n} Team(s) angezeigt" if due and due <= g.clock() else "wartet"
+                status = f"bei {n} Team(s) angezeigt" if g.card_is_due(c) else "wartet"
             else:
                 status = "ausgelöst" if g.card_fired(c) else "wartet"
             rows.append({"c": c, "offset": f"{c['offset_min'] // 60}:{c['offset_min'] % 60:02d}",
                          "due": g.hm(due) if due else None, "status": status})
         return rows
 
+    def clock_ctx(g: Game) -> dict:
+        dur, left, elapsed = g.duration_min(), g.game_remaining(), g.game_elapsed()
+        running = g.phase in ("running", "paused")
+        return {
+            "duration": fmt_duration(dur) if dur else None,
+            "duration_hm": f"{dur // 60}:{dur % 60:02d}" if dur else "",
+            "remaining": _hm_span(left) if left is not None and running else None,
+            "elapsed": _hm_span(elapsed) if elapsed is not None and running else None,
+            "end_time": g.hm(g.end_time()) if left is not None and running else None,
+        }
+
     def dashboard_ctx(g: Game) -> dict:
-        end = g.end_time()
-        return {"standings": g.standings(), "recent": g.recent_entries(20), "end_time": g.hm(end) if end else None,
+        return {"standings": g.standings(), "recent": g.recent_entries(20), "clock": clock_ctx(g),
                 "hidden": g.scores_hidden(), "multiplier": g.state().multiplier, "cards": event_card_rows(g)}
 
     @app.get("/", response_class=HTMLResponse)
@@ -346,12 +363,11 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
             spots.append({"sp": sp, "owner": st.owners.get(sp.id), "task": tasks.get(sp.id, ""),
                           "replaced": st.replaced.get(sp.id)})
         used_reserve = set(st.replaced.values())
-        end = g.end_time()
         return render(request, "verwaltung.html", teams=g.teams(), spots=spots,
                       event_cards=event_card_rows(g), card_kinds=EVENT_CARD_KINDS, action_cards=g.action_cards(),
                       reserve=list(g.data.reserve.values()), used_reserve=used_reserve,
-                      random_tasks=g.random_tasks(), hidden=g.scores_hidden(),
-                      end_time=g.local(end).strftime("%H:%M") if end else "", points=st.points)
+                      random_tasks=g.random_tasks(), hidden=g.scores_hidden(), clock=clock_ctx(g),
+                      points=st.points)
 
     async def _do(request: Request, coro_or_result) -> RedirectResponse:
         res = await coro_or_result if asyncio.iscoroutine(coro_or_result) else coro_or_result
@@ -390,10 +406,10 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
             return back("/verwaltung")
         return await _do(request, fn(who))
 
-    @app.post("/verwaltung/endzeit")
-    async def end_time(request: Request, hhmm: str = Form("")):
+    @app.post("/verwaltung/spieldauer")
+    async def set_duration(request: Request, dauer: str = Form("")):
         admin(request)
-        return await _do(request, G(request).set_end_time(hhmm.strip() or None))
+        return await _do(request, G(request).set_duration(dauer))
 
     @app.post("/verwaltung/verdeckt")
     async def hidden(request: Request, hidden: str | None = Form(None)):

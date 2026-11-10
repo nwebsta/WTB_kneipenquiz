@@ -55,7 +55,9 @@ spiel_wartet = "Sobald die Spielleitung startet, bekommt ihr Karte und Regeln. B
 
 [spiel]
 start = "🚦 <b>Los geht's!</b> Das Kneipenmonopoly ist eröffnet."
-pause = "⏸️ Kurze Pause! Gerade keine Check-ins. Eure laufenden Fristen sind angehalten."
+# Zusatz zur Startnachricht, wenn eine Spieldauer gesetzt ist. {dauer} = z.B. „3 Stunden“, {uhrzeit} = voraussichtliches Ende
+start_dauer = "⏱️ Ihr habt <b>{dauer}</b> Spielzeit. Schluss ist ca. um <b>{uhrzeit}</b> Uhr."
+pause = "⏸️ Kurze Pause! Gerade keine Check-ins. Die Spieluhr und eure laufenden Fristen sind angehalten."
 weiter = "▶️ Weiter geht's! Check-ins sind wieder offen."
 ende = "🏁 <b>Schluss!</b> Das Spiel ist vorbei. Fotos, die schon eingereicht sind, prüfen wir noch. Den Endstand bekommt ihr gleich."
 noch_vorbereitung = "⏳ Das Spiel hat noch nicht angefangen. Noch kurz gedulden!"
@@ -280,10 +282,14 @@ Bitte trinkt verantwortungsvoll und passt auf euch auf! 🍻
 '''
 # {punkte}
 besucher = ", ihr +{punkte}"
-# {uhrzeit}
+# Während des Spiels. {dauer} = Spieldauer, {uhrzeit} = voraussichtliches Ende
 endzeit = '''
 
-⏰ Schluss ist um <b>{uhrzeit}</b> Uhr.'''
+⏱️ Spielzeit: <b>{dauer}</b>, Schluss ist ca. um <b>{uhrzeit}</b> Uhr (Pausen verlängern).'''
+# Vor dem Start. {dauer}
+spielzeit = '''
+
+⏱️ Spielzeit: <b>{dauer}</b> ab Start.'''
 
 
 [hilfe]
@@ -327,6 +333,8 @@ wartet_auf_anruf = "📞 Ihr wartet auf einen Videoanruf der Spielleitung."
 aktionskarten_uebrig = "🎬 Noch {anzahl} Aktionskarte(n) übrig."
 # {faktor}
 multiplikator = "🔥 Gerade zählen alle Punkte {faktor}-fach!"
+# {rest} = verbleibende Spielzeit, {uhrzeit} = voraussichtliches Ende
+restzeit = "⏱️ Noch <b>{rest}</b> Spielzeit, Schluss ca. um {uhrzeit} Uhr."
 
 
 [felder]

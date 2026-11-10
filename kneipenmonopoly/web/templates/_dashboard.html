@@ -26,7 +26,14 @@
   <section class="card">
     <h2>Status</h2>
     <p>Spiel: <span class="phase phase-{{ phase }}">{{ phase_label }}</span></p>
-    <p>Spielende: <b>{{ end_time or "nicht gesetzt" }}</b></p>
+    {% if clock.remaining %}
+      <p class="big">⏱️ noch {{ clock.remaining }}</p>
+      <p class="small muted">Spielzeit {{ clock.duration }}, gespielt {{ clock.elapsed }}, Schluss ca. {{ clock.end_time }} Uhr{% if phase == 'paused' %} · Uhr steht (Pause){% endif %}</p>
+    {% elif clock.duration %}
+      <p>Spielzeit: <b>{{ clock.duration }}</b> <span class="muted small">(startet mit dem Spiel)</span></p>
+    {% else %}
+      <p>Spielzeit: <b>nicht gesetzt</b> <span class="muted small">(Ende nur per Klick)</span></p>
+    {% endif %}
     <p><a class="btn {{ 'primary' if pending else '' }}" href="/pruefen">{{ pending }} offene Prüfung{{ '' if pending == 1 else 'en' }}</a></p>
     {% if multiplier != 1 %}<p class="flash ok">🔥 Punkte zählen {{ multiplier }}-fach</p>{% endif %}
     <h3 class="small muted">Ereigniskarten</h3>

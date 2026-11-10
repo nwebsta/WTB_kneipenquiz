@@ -35,9 +35,16 @@ class Settings:
     data_dir: Path = Path("data")
     host: str = "0.0.0.0"
     port: int = 8000
+    ssl_certfile: Path | None = None   # gesetzt = HTTPS (Zertifikat, PEM)
+    ssl_keyfile: Path | None = None    # privater Schlüssel (PEM)
+
+    @property
+    def https(self) -> bool:
+        return bool(self.ssl_certfile and self.ssl_keyfile)
     checkin_radius_m: int = 50
     checkin_timeout_min: int = 20
     cooldown_min: int = 30
+    game_duration_min: int | None = None   # Standard-Spieldauer, in der Verwaltung änderbar
     random_tasks_enabled: bool = True
     announce_street_complete: bool = True
     scores_hidden_default: bool = False
@@ -89,9 +96,12 @@ def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None 
         data_dir=Path(env.get("DATA_DIR") or "data"),
         host=env.get("HOST") or "0.0.0.0",
         port=_int(env, "PORT", 8000),
+        ssl_certfile=Path(env["SSL_CERTFILE"]) if env.get("SSL_CERTFILE") else None,
+        ssl_keyfile=Path(env["SSL_KEYFILE"]) if env.get("SSL_KEYFILE") else None,
         checkin_radius_m=_int(env, "CHECKIN_RADIUS_M", 50),
         checkin_timeout_min=_int(env, "CHECKIN_TIMEOUT_MIN", 20),
         cooldown_min=_int(env, "COOLDOWN_MIN", 30),
+        game_duration_min=_int(env, "GAME_DURATION_MIN", 0) or None,
         random_tasks_enabled=_bool(env.get("RANDOM_TASKS_ENABLED"), True),
         announce_street_complete=_bool(env.get("ANNOUNCE_STREET_COMPLETE"), True),
         scores_hidden_default=_bool(env.get("SCORES_HIDDEN"), False),
