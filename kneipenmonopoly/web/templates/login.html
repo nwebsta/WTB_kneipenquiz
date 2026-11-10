@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login · Kneipenmonopoly</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login">
+<form method="post" action="/login" class="card login-card">
+  <h1>🍻 Kneipenmonopoly</h1>
+  <p class="muted">Admin-Bereich</p>
+  {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+  <label>Dein Name <small>(steht im Protokoll)</small>
+    <input name="name" required maxlength="30" autocomplete="nickname" autofocus>
+  </label>
+  <label>Passwort
+    <input name="password" type="password" required autocomplete="current-password">
+  </label>
+  <button class="btn primary" type="submit">Anmelden</button>
+</form>
+</body>
+</html>

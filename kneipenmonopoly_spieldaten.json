@@ -1,0 +1,413 @@
+{
+  "game": "Kneipenmonopoly Rüttenscheid",
+  "city": "Essen",
+  "coordinates": "WGS84, aus OpenStreetMap/Hausnummern, Genauigkeit ca. 10-30 m",
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "frueher-oder-spaeter",
+        "mimaya"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "die-kokille",
+        "pelayo",
+        "gin-jagger"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "fritzpatricks",
+        "hudsons",
+        "11-freunde"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "sailors-pub",
+        "menehune",
+        "southville"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "zum-brenner",
+        "gatz",
+        "fcuk-yoga"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "die-eule",
+        "le-chat-noir",
+        "chateau-pling"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "wirtshaus-rue",
+        "zizou",
+        "zucca"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "ampuette",
+        "banditen-wie-wir"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "frueher-oder-spaeter",
+      "no": 1,
+      "name": "Früher oder Später",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Wittekindstr. 12, 45130/45131 Essen",
+      "lat": 51.430134,
+      "lon": 7.004468
+    },
+    {
+      "id": "mimaya",
+      "no": 2,
+      "name": "Mimaya",
+      "type": "bar",
+      "group": "braun",
+      "address": "Rüttenscheider Str. 201, 45130/45131 Essen",
+      "lat": 51.429656,
+      "lon": 7.003469
+    },
+    {
+      "id": "die-kokille",
+      "no": 3,
+      "name": "Die Kokille",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Rüttenscheider Str. 134, 45130/45131 Essen",
+      "lat": 51.431922,
+      "lon": 7.00372
+    },
+    {
+      "id": "pelayo",
+      "no": 4,
+      "name": "Pelayo",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Rüttenscheider Str. 138, 45130/45131 Essen",
+      "lat": 51.43164,
+      "lon": 7.003705
+    },
+    {
+      "id": "gin-jagger",
+      "no": 5,
+      "name": "Gin & Jagger",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Rüttenscheider Str. 181, 45130/45131 Essen",
+      "lat": 51.432408,
+      "lon": 7.004356
+    },
+    {
+      "id": "fritzpatricks",
+      "no": 6,
+      "name": "Fritzpatrick's",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Girardetstr. 2, 45130/45131 Essen",
+      "lat": 51.431095,
+      "lon": 7.004159
+    },
+    {
+      "id": "hudsons",
+      "no": 7,
+      "name": "Hudson's",
+      "type": "bar",
+      "group": "pink",
+      "address": "Girardetstr. 2, 45130/45131 Essen",
+      "lat": 51.430927,
+      "lon": 7.00481
+    },
+    {
+      "id": "11-freunde",
+      "no": 8,
+      "name": "11 Freunde",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Kunigundastr. 27, 45130/45131 Essen",
+      "lat": 51.431506,
+      "lon": 7.009313
+    },
+    {
+      "id": "sailors-pub",
+      "no": 9,
+      "name": "Sailor's Pub",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Alfredstr. 118, 45130/45131 Essen",
+      "lat": 51.432697,
+      "lon": 7.001422
+    },
+    {
+      "id": "menehune",
+      "no": 10,
+      "name": "Menehune",
+      "type": "bar",
+      "group": "orange",
+      "address": "Wehmenkamp 3, 45130/45131 Essen",
+      "lat": 51.433488,
+      "lon": 7.003694
+    },
+    {
+      "id": "southville",
+      "no": 11,
+      "name": "Southville",
+      "type": "bar",
+      "group": "orange",
+      "address": "Rüttenscheider Str. 112, 45130/45131 Essen",
+      "lat": 51.433607,
+      "lon": 7.004015
+    },
+    {
+      "id": "zum-brenner",
+      "no": 12,
+      "name": "Zum Brenner",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Hedwigstr. 37, 45130/45131 Essen",
+      "lat": 51.43494,
+      "lon": 7.007866
+    },
+    {
+      "id": "gatz",
+      "no": 13,
+      "name": "Gatz",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Dorotheenstr. 8, 45130/45131 Essen",
+      "lat": 51.436348,
+      "lon": 7.006144
+    },
+    {
+      "id": "fcuk-yoga",
+      "no": 14,
+      "name": "FCUK Yoga",
+      "type": "bar",
+      "group": "rot",
+      "address": "Emmastr. 13, 45130/45131 Essen",
+      "lat": 51.435397,
+      "lon": 7.006385
+    },
+    {
+      "id": "die-eule",
+      "no": 15,
+      "name": "Die Eule",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Klarastr. 68, 45130/45131 Essen",
+      "lat": 51.439342,
+      "lon": 7.012116
+    },
+    {
+      "id": "le-chat-noir",
+      "no": 16,
+      "name": "Le Chat Noir",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Brigittastr. 22, 45130/45131 Essen",
+      "lat": 51.439666,
+      "lon": 7.010296
+    },
+    {
+      "id": "chateau-pling",
+      "no": 17,
+      "name": "chateau pling",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Annastr. 43, 45130/45131 Essen",
+      "lat": 51.44023,
+      "lon": 7.009912
+    },
+    {
+      "id": "wirtshaus-rue",
+      "no": 18,
+      "name": "Wirtshaus Rü",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Rüttenscheider Str. 81, 45130/45131 Essen",
+      "lat": 51.438882,
+      "lon": 7.006023
+    },
+    {
+      "id": "zizou",
+      "no": 19,
+      "name": "Zizou",
+      "type": "bar",
+      "group": "gruen",
+      "address": "Annastr. 2, 45130/45131 Essen",
+      "lat": 51.439218,
+      "lon": 7.006144
+    },
+    {
+      "id": "zucca",
+      "no": 20,
+      "name": "Zucca",
+      "type": "bar",
+      "group": "gruen",
+      "address": "Rüttenscheider Str. 75, 45130/45131 Essen",
+      "lat": 51.439415,
+      "lon": 7.006176
+    },
+    {
+      "id": "ampuette",
+      "no": 21,
+      "name": "Ampütte",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Rüttenscheider Str. 42, 45130/45131 Essen",
+      "lat": 51.440226,
+      "lon": 7.006059
+    },
+    {
+      "id": "banditen-wie-wir",
+      "no": 22,
+      "name": "Banditen wie wir",
+      "type": "bar",
+      "group": "dunkelblau",
+      "address": "Kahrstr. 3, 45130/45131 Essen",
+      "lat": 51.440327,
+      "lon": 7.005837
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Shell-Tankstelle, Von-Schmoller-Str. 1",
+      "lat": 51.442729,
+      "lon": 7.012127,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Kiosk, Paulinenstr. 28",
+      "lat": 51.435411,
+      "lon": 7.011973,
+      "verified_open": true
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "Kiosk 18, Manfredstr. 18",
+      "lat": 51.42439,
+      "lon": 7.001509,
+      "verified_open": true
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Ramya's Mini Market & Kiosk, Alfredstraße",
+      "lat": 51.437755,
+      "lon": 7.002808,
+      "verified_open": true
+    }
+  ],
+  "reserve": [
+    {
+      "id": "bisou",
+      "name": "bisou",
+      "address": "Brigittastr. 12",
+      "lat": 51.440276,
+      "lon": 7.010041
+    },
+    {
+      "id": "zweibar",
+      "name": "Zweibar",
+      "address": "Rü 63",
+      "lat": 51.439954,
+      "lon": 7.00634
+    },
+    {
+      "id": "kovee-winebar",
+      "name": "KOVÉE Winebar",
+      "address": "Rü 54",
+      "lat": 51.439266,
+      "lon": 7.005765
+    },
+    {
+      "id": "stoffwechsel",
+      "name": "Stoffwechsel",
+      "address": "Hedwigstr. 5",
+      "lat": 51.437358,
+      "lon": 7.007849
+    },
+    {
+      "id": "emma-2",
+      "name": "Emma 2",
+      "address": "Emmastr. 2",
+      "lat": 51.43533,
+      "lon": 7.005391
+    },
+    {
+      "id": "ruffs-burger",
+      "name": "Ruff's Burger",
+      "address": "Rü 120",
+      "lat": 51.433036,
+      "lon": 7.003999
+    },
+    {
+      "id": "faces-bar",
+      "name": "Faces Bar",
+      "address": "Rü 211",
+      "lat": 51.42913,
+      "lon": 7.003287
+    },
+    {
+      "id": "bliss",
+      "name": "BLISS",
+      "address": "Rü 237",
+      "lat": 51.427913,
+      "lon": 7.003012
+    },
+    {
+      "id": "juan-sanchez",
+      "name": "Juan Sanchez",
+      "address": "Rü 214",
+      "lat": 51.426381,
+      "lon": 7.002108
+    },
+    {
+      "id": "luck-in-a-cup",
+      "name": "Luck in a Cup",
+      "address": "Rü 236",
+      "lat": 51.425318,
+      "lon": 7.001796
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Verwaltung{% endblock %}
+{% block content %}
+<h1>Verwaltung</h1>
+<nav class="subnav">
+  <a href="#spiel">Spiel</a> <a href="#teams">Teams</a> <a href="#korrektur">Korrekturen</a>
+  <a href="#felder">Felder</a> <a href="#aufgaben">Zufallsaufgaben</a> <a href="#ereignisse">Ereigniskarten</a>
+  <a href="#aktionen">Aktionskarten</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
+  <a href="#datenschutz">Datenschutz</a>
+</nav>
+
+<section class="card" id="spiel">
+  <h2>Spiel <span class="phase phase-{{ phase }}">{{ phase_label }}</span></h2>
+  <div class="row">
+    {% if phase == 'setup' %}
+      <form method="post" action="/verwaltung/spiel/start" onsubmit="return confirm('Spiel starten? Alle Teams bekommen Karte und Regeln.')">
+        <button class="btn primary">🚦 Spiel starten</button></form>
+    {% endif %}
+    {% if phase == 'running' %}
+      <form method="post" action="/verwaltung/spiel/pause"><button class="btn">⏸️ Pause</button></form>
+    {% endif %}
+    {% if phase == 'paused' %}
+      <form method="post" action="/verwaltung/spiel/weiter"><button class="btn primary">▶️ Weiter</button></form>
+    {% endif %}
+    {% if phase in ('running', 'paused') %}
+      <form method="post" action="/verwaltung/spiel/ende" onsubmit="return confirm('Spiel wirklich beenden?')">
+        <button class="btn bad">🏁 Spiel beenden</button></form>
+    {% endif %}
+    {% if phase == 'ended' %}
+      <form method="post" action="/verwaltung/spiel/endstand"><button class="btn">🏆 Endstand nochmal senden</button></form>
+    {% endif %}
+  </div>
+  <div class="row">
+    <form method="post" action="/verwaltung/endzeit" class="row">
+      <label>Spielende (HH:MM) <input name="hhmm" value="{{ end_time }}" placeholder="23:30" size="6"></label>
+      <button class="btn">Speichern</button>
+    </form>
+    <form method="post" action="/verwaltung/verdeckt" class="row">
+      <label class="check"><input type="checkbox" name="hidden" value="1" {% if hidden %}checked{% endif %}> Punktestand für Spieler verdecken</label>
+      <button class="btn">Übernehmen</button>
+    </form>
+  </div>
+  <form method="post" action="/verwaltung/nachricht" class="row">
+    <select name="target">
+      <option value="alle">an alle Teams</option>
+      {% for t in teams %}<option value="{{ t.id }}">an {{ t.name }}</option>{% endfor %}
+    </select>
+    <input name="text" placeholder="Nachricht der Spielleitung" required class="grow">
+    <button class="btn primary">Senden</button>
+  </form>
+</section>
+
+<section class="card" id="teams">
+  <h2>Teams</h2>
+  <table class="table">
+    <thead><tr><th>Name</th><th>Farbe</th><th>Code</th><th>Telegram</th><th></th></tr></thead>
+    <tbody>
+    {% for t in teams %}
+      <tr>
+        <td><form method="post" action="/verwaltung/team/{{ t.id }}/speichern" id="team-{{ t.id }}"></form><input form="team-{{ t.id }}" name="name" value="{{ t.name }}" required size="12"></td>
+        <td><input form="team-{{ t.id }}" name="color" type="color" value="{{ t.color }}"></td>
+        <td><input form="team-{{ t.id }}" name="code" value="{{ t.code }}" required size="7" class="mono"></td>
+        <td class="small">{% if t.chat_id %}✅ {{ t.chat_title }}{% else %}<span class="tag warn">nicht verknüpft</span>{% endif %}</td>
+        <td class="row nowrap">
+          <button form="team-{{ t.id }}" class="btn small">Speichern</button>
+          {% if t.chat_id %}
+          <form method="post" action="/verwaltung/team/{{ t.id }}/trennen" onsubmit="return confirm('Chat-Verknüpfung lösen?')">
+            <button class="btn small">Chat lösen</button></form>
+          {% endif %}
+          {% if phase == 'setup' %}
+          <form method="post" action="/verwaltung/team/{{ t.id }}/loeschen" onsubmit="return confirm('Team löschen?')">
+            <button class="btn small bad">Löschen</button></form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/verwaltung/team/neu" class="row">
+    <input name="name" placeholder="Teamname" required>
+    <input name="color" type="color" value="#3366cc">
+    <input name="code" placeholder="Code (leer = zufällig)" size="14" class="mono">
+    <button class="btn primary">Team anlegen</button>
+  </form>
+  <p class="muted small">Spieler schreiben in ihrer Team-Gruppe <code>/join CODE</code>.</p>
+</section>
+
+<section class="card" id="korrektur">
+  <h2>Manuelle Korrekturen</h2>
+  <form method="post" action="/verwaltung/besitzer" class="row">
+    <select name="spot" required>
+      {% for x in spots %}<option value="{{ x.sp.id }}">{{ x.sp.no or '🚉' }} {{ x.sp.name }}{% if x.owner %} ({{ game.team_name(x.owner) }}){% endif %}</option>{% endfor %}
+    </select>
+    <select name="team">
+      <option value="">niemand (frei)</option>
+      {% for t in teams %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+    </select>
+    <input name="comment" placeholder="Kommentar" required class="grow">
+    <button class="btn">Besitzer setzen</button>
+  </form>
+  <form method="post" action="/verwaltung/punkte" class="row">
+    <select name="team" required>
+      {% for t in teams %}<option value="{{ t.id }}">{{ t.name }} ({{ points.get(t.id, 0) }})</option>{% endfor %}
+    </select>
+    <input name="delta" type="number" placeholder="+/- Punkte" required size="6">
+    <input name="comment" placeholder="Kommentar" required class="grow">
+    <button class="btn">Punkte buchen</button>
+  </form>
+  <p class="muted small">Jede Korrektur landet im Protokoll und lässt sich dort zurücknehmen.</p>
+</section>
+
+<section class="card" id="felder">
+  <h2>Felder und Aufgaben</h2>
+  <div class="scroll">
+  <table class="table">
+    <thead><tr><th>#</th><th>Feld</th><th>Besitzer</th><th>Aufgabe</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for x in spots %}
+      {% set sp = x.sp %}
+      <tr class="{{ '' if sp.active else 'inactive' }}">
+        <td>{{ sp.no or '' }}</td>
+        <td><span class="chip" style="--c:{{ sp.color }}">{{ sp.name }}</span>
+          <div class="small muted">{{ sp.group_name }}{% if sp.original_name %} · Ersatz für {{ sp.original_name }}{% endif %}</div></td>
+        <td>{{ game.team_name(x.owner) if x.owner else 'frei' }}</td>
+        <td>
+          <form method="post" action="/verwaltung/feld/{{ sp.id }}/aufgabe" class="row nowrap">
+            <input name="text" value="{{ x.task }}" placeholder="keine (ggf. Zufall)" class="grow">
+            <button class="btn small">💾</button>
+          </form>
+        </td>
+        <td>
+          {% if sp.active %}
+            <form method="post" action="/verwaltung/feld/{{ sp.id }}/deaktivieren" onsubmit="return confirm('{{ sp.name }} deaktivieren? Alle Teams werden informiert.')">
+              <button class="btn small bad">Deaktivieren</button></form>
+          {% else %}
+            <form method="post" action="/verwaltung/feld/{{ sp.id }}/aktivieren"><button class="btn small">Aktivieren</button></form>
+          {% endif %}
+          {% if sp.kind == 'field' %}
+          <form method="post" action="/verwaltung/feld/{{ sp.id }}/ersetzen" class="row nowrap"
+                onsubmit="return confirm('Feld ersetzen? Alle Teams werden informiert.')">
+            <select name="reserve">
+              <option value="">Original</option>
+              {% for r in reserve %}
+                <option value="{{ r.id }}" {% if x.replaced == r.id %}selected{% endif %}
+                  {% if r.id in used_reserve and x.replaced != r.id %}disabled{% endif %}>{{ r.name }} ({{ r.address }})</option>
+              {% endfor %}
+            </select>
+            <button class="btn small">Ersetzen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card" id="aufgaben">
+  <h2>Zufallsaufgaben</h2>
+  <p class="muted small">Für Felder ohne eigene Aufgabe wird beim Check-in zufällig eine gezogen (abschaltbar über RANDOM_TASKS_ENABLED).</p>
+  <ul class="plain">
+    {% for t in random_tasks %}
+      <li class="row nowrap">
+        <span class="grow">{{ t.text }}</span>
+        <form method="post" action="/verwaltung/zufallsaufgabe/{{ t.id }}/loeschen"><button class="btn small bad">✕</button></form>
+      </li>
+    {% else %}<li class="muted">Noch keine.</li>{% endfor %}
+  </ul>
+  <form method="post" action="/verwaltung/zufallsaufgabe/neu" class="row">
+    <input name="text" placeholder="z.B. Stoßt mit dem Barpersonal an" required class="grow">
+    <button class="btn">Hinzufügen</button>
+  </form>
+</section>
+
+<section class="card" id="ereignisse">
+  <h2>Ereigniskarten</h2>
+  <p class="muted small">Zeit ab Spielstart (H:MM). <b>Nächster Check-in:</b> Jedes Team sieht die Karte beim ersten
+     Kneipen-Check-in nach dieser Zeit, einmal pro Team. <b>Doppelte Punkte:</b> wird sofort an alle geschickt; Fotos und
+     Anfragen ab dieser Uhrzeit zählen {{ game.s.rules.double_factor }}-fach (es zählt die Uploadzeit).</p>
+  <div class="scroll">
+  <table class="table">
+    <thead><tr><th>Zeit</th><th>Art</th><th>Text</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in event_cards %}
+      <tr>
+        <td><form method="post" action="/verwaltung/ereigniskarte/{{ r.c.id }}/speichern" id="ec-{{ r.c.id }}"></form>
+          <input form="ec-{{ r.c.id }}" name="offset" value="{{ r.offset }}" size="5" required>
+          {% if r.due %}<div class="small muted">um {{ r.due }}</div>{% endif %}</td>
+        <td><select form="ec-{{ r.c.id }}" name="kind">
+          {% for k, label in card_kinds.items() %}<option value="{{ k }}" {% if r.c.kind == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></td>
+        <td><input form="ec-{{ r.c.id }}" name="text" value="{{ r.c.text }}" required class="grow" style="width:100%"></td>
+        <td class="small">{{ r.status }}</td>
+        <td class="row nowrap">
+          <button form="ec-{{ r.c.id }}" class="btn small">💾</button>
+          <form method="post" action="/verwaltung/ereigniskarte/{{ r.c.id }}/loeschen" onsubmit="return confirm('Ereigniskarte löschen?')">
+            <button class="btn small bad">✕</button></form>
+        </td>
+      </tr>
+    {% else %}<tr><td colspan="5" class="muted">Keine Ereigniskarten.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="/verwaltung/ereigniskarte/neu" class="row">
+    <input name="offset" placeholder="H:MM" size="5" required>
+    <select name="kind">{% for k, label in card_kinds.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select>
+    <input name="text" placeholder="Text der Karte" required class="grow">
+    <button class="btn">Hinzufügen</button>
+  </form>
+  <p class="muted small">Die doppelten Punkte lassen sich im Protokoll zurücknehmen.</p>
+</section>
+
+<section class="card" id="aktionen">
+  <h2>Aktionskarten</h2>
+  <p class="muted small">Teams ziehen über den Button „🎬 Aktionskarte ziehen“ eine zufällige Karte, jede Karte höchstens
+     einmal pro Team. Der Button hängt an jeder Check-in-Bestätigung, an der Antwort auf /stand und an den Regeln zum Spielstart.
+     Die Anfrage erscheint unter <a href="/pruefen">Prüfen</a>. Dort ruft ihr die Gruppe per Video an und entscheidet:
+     geschafft {{ '%+d'|format(game.s.rules.action_success) }}, nicht geschafft {{ '%+d'|format(game.s.rules.action_fail) }}.
+     Wichtig: Wer anruft, muss Mitglied der Telegram-Gruppe des Teams sein.</p>
+  <ul class="plain">
+    {% for c in action_cards %}
+      <li class="row nowrap">
+        <span class="grow">{{ loop.index }}. {{ c.text }}</span>
+        <form method="post" action="/verwaltung/aktionskarte/{{ c.id }}/loeschen" onsubmit="return confirm('Aktionskarte löschen?')">
+          <button class="btn small bad">✕</button></form>
+      </li>
+    {% else %}<li class="muted">Noch keine. Bis hier etwas steht, zeigt der Bot keinen Button „Aktionskarte ziehen“.</li>{% endfor %}
+  </ul>
+  <form method="post" action="/verwaltung/aktionskarte/neu" class="row">
+    <input name="text" placeholder="z.B. Singt den Refrain von ... mit der ganzen Bar" required class="grow">
+    <button class="btn">Hinzufügen</button>
+  </form>
+</section>
+
+<section class="card" id="simulation">
+  <h2>Live-Simulation {% if sim.running %}<span class="phase phase-running">läuft</span>{% endif %}</h2>
+  <p>Die ausgewählten Teams spielen automatisch. Sie laufen über die Karte und teilen ihren Live-Standort. Sie checken in Bars ein,
+     schicken erzeugte Fotos, geraten in Wettrennen und ziehen Aktionskarten. Zuschauen kannst du im
+     <a href="/">Dashboard</a>, auf der <a href="/karte">Karte</a>, unter <a href="/pruefen">Prüfen</a> und in den
+     <a href="/chats">Chats</a>. Ist das Spiel noch in Vorbereitung, wird es gestartet.</p>
+  {% if sim.running %}
+    <form method="post" action="/verwaltung/simulation/tempo" class="row">
+      <label>Tempo
+        <select name="speed">
+          {% for key, sp in sim_speeds.items() %}<option value="{{ key }}" {% if sim.speed == key %}selected{% endif %}>{{ sp.label }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn">Tempo ändern</button>
+    </form>
+    <form method="post" action="/verwaltung/simulation/stop"><button class="btn bad">⏹️ Simulation stoppen</button></form>
+  {% else %}
+    <form method="post" action="/verwaltung/simulation/start">
+      <div class="row">
+        {% for t in teams %}
+          <label class="check"><input type="checkbox" name="team" value="{{ t.id }}" checked>
+            <span class="dot" style="background:{{ t.color }}"></span> {{ t.name }}</label>
+        {% else %}<span class="muted">Noch keine Teams angelegt.</span>{% endfor %}
+      </div>
+      <div class="row">
+        <label>Tempo
+          <select name="speed">
+            {% for key, sp in sim_speeds.items() %}<option value="{{ key }}" {% if sim.speed == key %}selected{% endif %}>{{ sp.label }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" name="auto" value="1"> Fotos und Aktionen automatisch freigeben (bei „Normal“ nach ca. 20 s, wächst mit dem Tempo)</label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" name="telegram" value="1"> Bot-Nachrichten wirklich in die Telegram-Gruppen schicken</label>
+      </div>
+      <p class="muted small">Ohne den letzten Haken landen die Bot-Antworten nur in den Chats auf dieser Seite, die Gruppen bleiben ruhig.
+         Danach mit <b>Spiel zurücksetzen</b> aufräumen, die Simulation schreibt in den echten Spielstand.</p>
+      <button class="btn primary">▶️ Simulation starten</button>
+    </form>
+  {% endif %}
+</section>
+
+<section class="card" id="test">
+  <h2>Testmodus und Zurücksetzen</h2>
+  <p>Im Testmodus checken Teams im Telegram-Chat per Nummer ein, ohne vor Ort zu sein:
+     <code>/checkin 15</code> für Feld 15, <code>/checkin N</code> für den Nordbahnhof (N/O/S/W).
+     Die Kurzform <code>/c 15</code> geht auch. Der normale Check-in per Standort funktioniert weiter.
+     Die Prüf-Warteschlange markiert solche Check-ins.</p>
+  <form method="post" action="/verwaltung/testmodus" class="row">
+    <label class="check"><input type="checkbox" name="on" value="1" {% if test_mode %}checked{% endif %}> Testmodus an</label>
+    <button class="btn">Übernehmen</button>
+  </form>
+  <p><b>Spiel zurücksetzen</b> löscht alle Ereignisse, Punkte, Besitz, Check-ins, Fotos und Chats.
+     Teams, Telegram-Verknüpfungen, Aufgaben und Einstellungen bleiben. Danach steht das Spiel wieder auf Vorbereitung.
+     Ideal nach einer Demo, vor dem echten Abend.</p>
+  <form method="post" action="/verwaltung/reset" class="row"
+        onsubmit="return confirm('Wirklich den kompletten Spielstand löschen?')">
+    <input name="confirm" placeholder="RESET eintippen">
+    <button class="btn bad">Spiel zurücksetzen</button>
+  </form>
+</section>
+
+<section class="card" id="datenschutz">
+  <h2>Datenschutz nach dem Spiel</h2>
+  <p>Löscht alle Fotos, Chatverläufe und Check-in-Standorte. Spielstand und Protokoll bleiben erhalten.
+     Vorher ggf. exportieren (<a href="/protokoll">Protokoll</a>).</p>
+  <form method="post" action="/verwaltung/datenschutz" class="row">
+    <input name="confirm" placeholder="LÖSCHEN eintippen">
+    <button class="btn bad">Endgültig löschen</button>
+  </form>
+</section>
+{% endblock %}

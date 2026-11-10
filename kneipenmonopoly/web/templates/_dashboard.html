@@ -1,0 +1,68 @@
+<div class="grid">
+  <section class="card">
+    <h2>Rangliste</h2>
+    {% if hidden %}<p class="muted small">Für Spieler gerade verdeckt.</p>{% endif %}
+    <table class="table">
+      <thead><tr><th>#</th><th>Team</th><th class="num">Punkte</th><th>Besitz</th></tr></thead>
+      <tbody>
+      {% for r in standings %}
+        <tr>
+          <td>{{ r.place }}</td>
+          <td><span class="dot" style="background:{{ r.color }}"></span> {{ r.name }}
+            {% if not r.linked %}<span class="tag warn" title="Kein Telegram-Chat verknüpft">kein Chat</span>{% endif %}</td>
+          <td class="num big">{{ r.points }}</td>
+          <td class="small">
+            {{ r.fields|length }} Bars, {{ r.stations|length }} Bahnhöfe
+            {% if r.streets %}<br>✅ {{ r.streets|join(', ') }}{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">Noch keine Teams. Lege sie unter Verwaltung an.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Status</h2>
+    <p>Spiel: <span class="phase phase-{{ phase }}">{{ phase_label }}</span></p>
+    <p>Spielende: <b>{{ end_time or "nicht gesetzt" }}</b></p>
+    <p><a class="btn {{ 'primary' if pending else '' }}" href="/pruefen">{{ pending }} offene Prüfung{{ '' if pending == 1 else 'en' }}</a></p>
+    {% if multiplier != 1 %}<p class="flash ok">🔥 Punkte zählen {{ multiplier }}-fach</p>{% endif %}
+    <h3 class="small muted">Ereigniskarten</h3>
+    <ul class="feed small">
+      {% for r in cards %}
+        <li><b>{{ r.due or r.offset }}</b> {{ r.c.text[:40] }}{% if r.c.text|length > 40 %}…{% endif %} <span class="muted">({{ r.status }})</span></li>
+      {% else %}<li class="muted">keine</li>{% endfor %}
+    </ul>
+  </section>
+
+  {% if sim and (sim.running or sim.events) %}
+  <section class="card wide">
+    <h2>🤖 Simulation {% if sim.running %}<span class="phase phase-running">läuft</span>{% else %}<span class="phase phase-ended">gestoppt</span>{% endif %}
+      <span class="small muted">Tempo: {{ sim.speed_label }} · <a href="/verwaltung#simulation">ändern</a></span></h2>
+    <div class="row">
+      {% for r in sim.status_rows() %}
+        <span class="tag"><span class="dot" style="background:{{ r.color }}"></span> <b>{{ r.team }}</b>: {{ r.state }} → {{ r.target }}</span>
+      {% endfor %}
+    </div>
+    <ul class="feed small">
+      {% for time, team, text in sim.events|list %}{% if loop.index <= 12 %}
+        <li><span class="muted">{{ time }}</span> <b>{{ team }}</b> {{ text }}</li>
+      {% endif %}{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="card wide">
+    <h2>Letzte Buchungen</h2>
+    <ul class="feed">
+      {% for e in recent %}
+        <li><span class="muted">{{ e.time }}</span> <b>{{ e.team }}</b>
+          <span class="{{ 'pos' if e.delta > 0 else 'neg' }}">{{ '%+d'|format(e.delta) }}</span> {{ e.text }}</li>
+      {% else %}
+        <li class="muted">Noch nichts passiert.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>

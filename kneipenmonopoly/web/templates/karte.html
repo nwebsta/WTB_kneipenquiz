@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Karte{% endblock %}
+{% block mainclass %}full{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+{% block content %}
+<div id="map"></div>
+<div id="map-legend" class="card legend"></div>
+<script>
+(function () {
+  const STALE_S = 15 * 60;   // ab 15 Minuten gilt eine Live-Position als alt
+  const map = L.map('map').setView([51.4345, 7.0065], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap-Mitwirkende'
+  }).addTo(map);
+  const spotsLayer = L.layerGroup().addTo(map);
+  const checkinLayer = L.layerGroup().addTo(map);
+  const liveLayer = L.layerGroup().addTo(map);
+  L.control.layers(null, {'📡 Live-Standorte': liveLayer, '🚩 Letzte Check-ins': checkinLayer},
+                   {collapsed: false}).addTo(map);
+  let fitted = false;
+
+  function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function age(s) {
+    if (s < 60) return 'gerade eben';
+    if (s < 3600) return 'vor ' + Math.floor(s / 60) + ' Min';
+    return 'vor ' + Math.floor(s / 3600) + ' Std ' + Math.floor(s % 3600 / 60) + ' Min';
+  }
+
+  async function load() {
+    let data;
+    try {
+      const r = await fetch('/api/karte', {credentials: 'same-origin'});
+      if (r.status === 401 || r.redirected) { location.href = '/login'; return; }
+      data = await r.json();
+    } catch (e) { return; }
+    spotsLayer.clearLayers(); checkinLayer.clearLayers(); liveLayer.clearLayers();
+    const bounds = [];
+    if (data.boundary && data.boundary.length) {
+      L.polygon(data.boundary, {color: '#d33', weight: 2, dashArray: '6 6', fill: false}).addTo(spotsLayer);
+    }
+    for (const s of data.spots) {
+      bounds.push([s.lat, s.lon]);
+      const title = `<b>${s.no ? s.no + '. ' : ''}${esc(s.name)}</b><br>${esc(s.group)}${s.original ? ' (Ersatz für ' + esc(s.original) + ')' : ''}<br>${esc(s.address)}<br>` +
+        (s.owner ? `👑 ${esc(s.owner)}` : '🆓 frei') + (s.active ? '' : '<br>🚫 deaktiviert');
+      if (s.kind === 'station') {
+        const icon = L.divIcon({className: 'station-icon', html: `<div style="border-color:${s.owner_color || '#222'}">${esc(s.name[0])}</div>`, iconSize: [26, 26]});
+        L.marker([s.lat, s.lon], {icon, opacity: s.active ? 1 : 0.4}).bindPopup(title).addTo(spotsLayer);
+      } else {
+        L.circleMarker([s.lat, s.lon], {
+          radius: s.kneipe ? 11 : 8,
+          color: s.owner_color || (s.kneipe ? '#111' : '#fff'),
+          weight: s.owner_color ? 5 : 2,
+          fillColor: s.color, fillOpacity: s.active ? 0.95 : 0.25,
+          dashArray: s.active ? null : '3 3'
+        }).bindPopup(title).bindTooltip(String(s.no), {permanent: true, direction: 'center', className: 'num-label'}).addTo(spotsLayer);
+      }
+    }
+    for (const p of data.positions) {
+      const icon = L.divIcon({className: 'team-icon', html: `<span style="background:${p.color}">🚩 ${esc(p.team)}</span>`, iconSize: null});
+      L.marker([p.lat, p.lon], {icon, zIndexOffset: 1000})
+        .bindPopup(`<b>${esc(p.team)}</b><br>Letzter Check-in: ${esc(p.spot)} um ${esc(p.time)}`).addTo(checkinLayer);
+    }
+    for (const p of data.live || []) {
+      const old = p.ended || p.age_s > STALE_S;
+      const status = p.ended ? 'Teilen beendet' : (old ? 'alt' : 'live');
+      if (p.accuracy && p.accuracy > 5) {
+        L.circle([p.lat, p.lon], {radius: p.accuracy, color: p.color, weight: 1, fillOpacity: 0.08, opacity: old ? 0.3 : 0.6, interactive: false}).addTo(liveLayer);
+      }
+      const icon = L.divIcon({
+        className: 'live-icon' + (old ? ' old' : ''),
+        html: `<span class="pulse" style="background:${p.color}"></span><span class="label" style="border-color:${p.color}">📡 ${esc(p.team)} · ${age(p.age_s)}</span>`,
+        iconSize: null, iconAnchor: [9, 9]
+      });
+      L.marker([p.lat, p.lon], {icon, zIndexOffset: 2000})
+        .bindPopup(`<b>${esc(p.team)}</b> (${status})<br>Live-Standort ${age(p.age_s)} (${esc(p.time)} Uhr)` +
+                   (p.accuracy ? `<br>Genauigkeit ca. ${Math.round(p.accuracy)} m` : '') +
+                   `<br><a href="https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=18/${p.lat}/${p.lon}" target="_blank">in OSM öffnen</a>`)
+        .addTo(liveLayer);
+    }
+    if (!fitted && bounds.length) { map.fitBounds(bounds, {padding: [20, 20]}); fitted = true; }
+    const owners = {};
+    for (const s of data.spots) if (s.owner) owners[s.owner] = s.owner_color;
+    document.getElementById('map-legend').innerHTML =
+      '<b>Besitzer</b> (dicker Rand)<br>' + (Object.keys(owners).length ? Object.entries(owners).map(([n, c]) =>
+        `<span class="dot" style="background:${c}"></span> ${esc(n)}`).join('<br>') : '<span class="muted">noch niemand</span>') +
+      '<br><small class="muted">Großer Punkt = Kneipe, Quadrat = Bahnhof, 🚩 = letzter Check-in, ' +
+      '📡 = Live-Standort (blass = älter als 15 Min oder beendet)</small>';
+  }
+  load();
+  setInterval(load, 10000);
+})();
+</script>
+{% endblock %}

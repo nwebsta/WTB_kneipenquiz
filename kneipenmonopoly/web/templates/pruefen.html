@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Prüfen{% endblock %}
+{% block content %}
+<h1>Prüf-Warteschlange <small class="muted">älteste zuerst, aktualisiert sich selbst</small></h1>
+<div id="queue" hx-get="/partials/queue" hx-trigger="every 4s [canRefreshQueue()]" hx-swap="innerHTML">
+  {% include "_queue.html" %}
+</div>
+<datalist id="reasons">{% for r in reasons %}<option value="{{ r }}">{% endfor %}</datalist>
+{% endblock %}

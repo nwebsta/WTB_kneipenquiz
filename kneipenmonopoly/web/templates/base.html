@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Kneipenmonopoly{% endblock %} · Admin</title>
+  {% block head %}{% endblock %}
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+  <script src="/static/app.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">🍻 Kneipenmonopoly</a>
+  <span class="phase phase-{{ phase }}">{{ phase_label }}</span>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/pruefen">Prüfen{% if pending %} <span class="badge">{{ pending }}</span>{% endif %}</a>
+    <a href="/karte">Karte</a>
+    <a href="/chats">Chats</a>
+    <a href="/verwaltung">Verwaltung</a>
+    <a href="/protokoll">Protokoll</a>
+    <a class="muted" href="/logout">{{ admin_name }} · Abmelden</a>
+  </nav>
+</header>
+{% if texts_error %}<div class="flash err" style="margin:0;border-radius:0">⚠️ Textdatei: {{ texts_error }} – für betroffene Texte gilt der Standardtext.</div>{% endif %}
+{% if sim and sim.running %}<div class="testbanner">🤖 SIMULATION läuft: Teams spielen automatisch. <a href="/verwaltung#simulation">stoppen</a></div>{% endif %}
+{% if test_mode %}<div class="testbanner">🧪 TESTMODUS: Teams können mit <code>/checkin NUMMER</code> ohne Standort einchecken. <a href="/verwaltung#test">ausschalten</a></div>{% endif %}
+<main class="{% block mainclass %}{% endblock %}">
+  {% if flash %}<div class="flash {{ 'ok' if flash.ok else 'err' }}">{{ flash.msg }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,109 @@
+{% macro dist(m, age) -%}
+  {%- set radius = game.s.checkin_radius_m -%}
+  <b class="{{ 'bad-text' if m > radius * 2 else ('warn-text' if m > radius else 'ok-text') }}">{{ m|round|int }} m</b>
+  <span class="muted">({{ age|age }})</span>
+{%- endmacro %}
+{% if flash %}<div class="flash {{ 'ok' if flash.ok else 'err' }}">{{ flash.msg }}</div>{% endif %}
+<span id="pending-count" hidden>{{ items|length }}</span>
+{% if multiplier and multiplier != 1 %}<div class="flash ok">🔥 Gerade zählen alle Punkte {{ multiplier }}-fach (nach Uploadzeit).</div>{% endif %}
+{% for it in items %}
+{% if it.type == 'photo' %}
+<article class="card review">
+  <a href="/foto/{{ it.s.id }}?v={{ it.s.file_unique_id }}" target="_blank" class="photo">
+    <img src="/foto/{{ it.s.id }}?v={{ it.s.file_unique_id }}" alt="Beweisfoto" loading="lazy">
+  </a>
+  <div class="details">
+    <h2>
+      📸
+      <span class="dot" style="background:{{ it.team.color if it.team else '#999' }}"></span>
+      {{ it.team.name if it.team else '?' }}
+      <span class="muted">→</span>
+      <span class="chip" style="--c:{{ it.spot.color }}">{{ it.spot.name }}</span>
+    </h2>
+    <dl>
+      <dt>Feld</dt><dd>{{ it.spot.group_name }}{% if it.spot.original_name %} (Ersatz für {{ it.spot.original_name }}){% endif %} · {{ it.spot.address }}</dd>
+      <dt>Besitzer</dt><dd>{{ it.owner or 'frei' }}</dd>
+      <dt>Eingereicht</dt><dd>{{ it.time }} Uhr <span class="muted">(vor {{ it.age_min }} Min, Check-in {{ it.checkin_time }})</span></dd>
+      <dt>Entfernung</dt><dd>
+        {% if it.s.is_test %}
+          <span class="tag warn">🧪 Test-Check-in per Nummer, kein echter Standort</span>
+        {% elif it.s.distance_m is not none %}
+          <b class="{{ 'warn-text' if it.s.distance_m > 35 else '' }}">{{ it.s.distance_m|round|int }} m</b>
+          {% if it.s.lat %}<a href="https://www.openstreetmap.org/?mlat={{ it.s.lat }}&mlon={{ it.s.lon }}#map=19/{{ it.s.lat }}/{{ it.s.lon }}" target="_blank">auf Karte</a>{% endif %}
+        {% else %}–{% endif %}
+      </dd>
+      <dt>Live-Standort</dt><dd class="live">
+        {% if it.s.checkin_live_distance_m is not none %}
+          <div>beim Check-in: {{ dist(it.s.checkin_live_distance_m, it.s.checkin_live_age_s) }}</div>
+        {% endif %}
+        {% if it.s.live_distance_m is not none %}
+          <div>beim Foto: {{ dist(it.s.live_distance_m, it.s.live_age_s) }}
+            <a href="https://www.openstreetmap.org/?mlat={{ it.s.live_lat }}&mlon={{ it.s.live_lon }}#map=18/{{ it.s.live_lat }}/{{ it.s.live_lon }}" target="_blank">auf Karte</a></div>
+        {% endif %}
+        {% if it.live_now %}
+          <div>jetzt: {{ dist(it.live_now.distance_m, it.live_now.age_s) }}{% if it.live_now.ended %} <span class="tag">Teilen beendet</span>{% endif %}</div>
+        {% endif %}
+        {% if it.s.checkin_live_distance_m is none and it.s.live_distance_m is none and not it.live_now %}
+          <span class="muted">nicht geteilt</span>
+        {% endif %}
+      </dd>
+      {% if it.s.event_text %}<dt>Ereigniskarte</dt><dd><b class="warn-text">🃏 {{ it.s.event_text }}</b></dd>{% endif %}
+      <dt>Aufgabe</dt><dd>{{ it.s.task_text or '–' }}</dd>
+      <dt>Wirkung</dt><dd>
+        {% for team, delta, text in it.preview %}<div>{{ team }} <b>{{ '%+d'|format(delta) }}</b> {{ text }}</div>
+        {% else %}<span class="muted">keine Punkte</span>{% endfor %}
+      </dd>
+    </dl>
+
+    {% if it.blocked_by %}
+      <div class="flash err">Erst das ältere Foto von <b>{{ it.blocked_by }}</b> für dieses Feld prüfen.</div>
+    {% endif %}
+
+    <form class="actions" hx-post="/pruefen/{{ it.s.id }}/ok" hx-target="#queue" hx-swap="innerHTML">
+      {% if it.s.task_text %}
+        <label class="check"><input type="checkbox" name="task_done" value="1"> Aufgabe erfüllt</label>
+      {% endif %}
+      <button class="btn ok" type="submit" {% if it.blocked_by %}disabled{% endif %}>✅ Gültig</button>
+    </form>
+    <form class="actions" hx-post="/pruefen/{{ it.s.id }}/nein" hx-target="#queue" hx-swap="innerHTML">
+      <input name="reason" list="reasons" placeholder="Grund für Ablehnung" required>
+      <button class="btn bad" type="submit">❌ Ungültig</button>
+    </form>
+  </div>
+</article>
+{% else %}
+{% set c = it.c %}
+<article class="card call">
+  <h2>
+    📞 Videoanruf:
+    <span class="dot" style="background:{{ it.team.color if it.team else '#999' }}"></span>
+    {{ it.team.name if it.team else '?' }}
+    <span class="tag warn">🎬 Aktionskarte</span>
+  </h2>
+  <p class="callhint">Ruf die Telegram-Gruppe <b>„{{ it.team.chat_title if it.team and it.team.chat_title else '?' }}“</b>
+     per Video an. Prüfe dabei, ob das Team wirklich in der genannten Kneipe ist.</p>
+  <dl>
+    <dt>Aufgabe</dt><dd><b class="big-text">{{ c.card_text }}</b></dd>
+    <dt>Kneipe</dt><dd>
+      {% if it.spot %}<span class="chip" style="--c:{{ it.spot.color }}">{{ it.spot.name }}</span>
+        <span class="muted">letzter Check-in {{ it.checkin_time }} · {{ it.spot.address }}</span>
+      {% else %}<span class="muted">noch nirgends eingecheckt</span>{% endif %}
+    </dd>
+    <dt>Angefragt</dt><dd>{{ it.time }} Uhr <span class="muted">(wartet seit {{ it.age_min }} Min)</span></dd>
+    <dt>Wenn ✅</dt><dd>{% for team, delta, text in it.preview_ok %}<div>{{ team }} <b>{{ '%+d'|format(delta) }}</b> {{ text }}</div>{% else %}<span class="muted">keine Punkte</span>{% endfor %}</dd>
+    <dt>Wenn ❌</dt><dd>{% for team, delta, text in it.preview_fail %}<div>{{ team }} <b>{{ '%+d'|format(delta) }}</b> {{ text }}</div>{% else %}<span class="muted">keine Punkte</span>{% endfor %}</dd>
+  </dl>
+  <div class="actions">
+    <form hx-post="/pruefen/anruf/{{ c.id }}/ok" hx-target="#queue" hx-swap="innerHTML">
+      <button class="btn ok">✅ Geschafft</button></form>
+    <form hx-post="/pruefen/anruf/{{ c.id }}/nein" hx-target="#queue" hx-swap="innerHTML">
+      <button class="btn bad">❌ Nicht geschafft</button></form>
+    <form hx-post="/pruefen/anruf/{{ c.id }}/abbrechen" hx-target="#queue" hx-swap="innerHTML"
+          hx-confirm="Anfrage abbrechen? Es gibt keine Punkte, eine Aktionskarte geht zurück in den Stapel.">
+      <button class="btn small">Abbrechen</button></form>
+  </div>
+</article>
+{% endif %}
+{% else %}
+<div class="card empty">🎉 Nichts zu prüfen. Prost!</div>
+{% endfor %}

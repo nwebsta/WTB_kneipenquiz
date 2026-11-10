@@ -1,0 +1,25 @@
+<p class="muted small">Neueste oben.</p>
+<ul class="chat">
+{% for x in msgs %}
+  {% set m = x.m %}
+  <li class="msg {{ m.direction }}">
+    <div class="meta">
+      <span class="muted">{{ x.time }}</span>
+      {% if x.team %}<span class="dot" style="background:{{ x.team.color }}"></span> <b>{{ x.team.name }}</b>
+      {% else %}<span class="tag warn">nicht verknüpft</span> <b>{{ m.chat_title or m.chat_id or '?' }}</b>{% endif %}
+      · {{ m.sender or '' }}
+    </div>
+    {% if m.kind == 'photo' %}
+      {% if m.photo_path %}<a href="/chatfoto/{{ m.id }}?v={{ m.file_unique_id }}" target="_blank"><img class="thumb" src="/chatfoto/{{ m.id }}?v={{ m.file_unique_id }}" loading="lazy" alt="Foto"></a>{% else %}<i>[Foto]</i>{% endif %}
+      {% if m.text %}<div>{{ m.text }}</div>{% endif %}
+    {% elif m.kind == 'location' %}
+      📍 {{ m.text }}:
+      {% if m.lat is not none %}<a target="_blank" href="https://www.openstreetmap.org/?mlat={{ m.lat }}&mlon={{ m.lon }}#map=18/{{ m.lat }}/{{ m.lon }}">{{ '%.5f'|format(m.lat) }}, {{ '%.5f'|format(m.lon) }}</a>{% endif %}
+    {% else %}
+      <div class="text">{{ m.text|plain }}</div>
+    {% endif %}
+  </li>
+{% else %}
+  <li class="muted">Noch keine Nachrichten.</li>
+{% endfor %}
+</ul>

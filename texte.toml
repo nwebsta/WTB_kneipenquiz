@@ -1,0 +1,346 @@
+# =============================================================================
+# Kneipenmonopoly – alle Texte, die der Bot an die Teams schickt
+# =============================================================================
+#
+# So bearbeitest du die Texte:
+#   * Text zwischen den Anführungszeichen ändern, Datei speichern. Fertig.
+#     Der Bot liest die Datei bei Änderungen sofort neu ein, ohne Neustart.
+#   * Platzhalter in {geschweiften Klammern} setzt der Bot ein, z.B. {bar} oder {team}.
+#     Welche Platzhalter ein Text hat, steht im Kommentar darüber. Nicht umbenennen!
+#   * Formatierung (Telegram-HTML): <b>fett</b>, <i>kursiv</i>, <code>Code</code>.
+#     Ein echtes & muss als &amp; geschrieben werden.
+#   * Einzeilige Texte stehen in "…". Darin keine geraden Anführungszeichen (")
+#     verwenden, sondern „…“.
+#   * Mehrzeilige Texte stehen zwischen ''' und '''. Zeilenumbrüche bleiben erhalten.
+#   * Ein leerer Text ("") wird gar nicht angezeigt.
+#   * Fehlt ein Text oder hat die Datei einen Tippfehler, nimmt der Bot den
+#     Standardtext. Die Verwaltungsseite zeigt dann eine Warnung.
+#
+# Geschweifte Klammern, die keine Platzhalter sind, als {{ und }} schreiben.
+# =============================================================================
+
+
+[allgemein]
+nicht_verknuepft = "👋 Dieser Chat ist noch keinem Team zugeordnet. Schickt <code>/join CODE</code> mit dem Code von der Spielleitung."
+bot_begruessung = "🍻 Moin! Ich bin der Kneipenmonopoly-Bot. Schickt <code>/join CODE</code> mit eurem Team-Code, dann geht's los."
+fehler = "🙈 Hoppla, da ist was schiefgelaufen. Probiert's nochmal oder sagt der Spielleitung Bescheid."
+foto_als_datei = "📸 Bitte als normales Foto schicken, nicht als Datei. Danke!"
+karte_beschriftung = "🗺️ Euer Spielplan. Viel Spaß und Prost!"
+karte_fehlt = "(Karte fehlt auf dem Server, sagt der Spielleitung Bescheid.)"
+# {text} = Nachricht aus der Admin-Webseite
+spielleitung = "📣 <b>Spielleitung:</b> {text}"
+# {punkte}
+punktestand = "Euer Punktestand: <b>{punkte}</b>"
+button_kurzen = "🥃 Kurzen & gehen"
+button_aktion = "🎬 Aktionskarte ziehen"
+nicht_zugeordnet_kurz = "Chat ist keinem Team zugeordnet."
+auswahl_ungueltig = "Ungültige Auswahl."
+
+
+[join]
+ohne_code = "Bitte mit Code: <code>/join DEINCODE</code>"
+code_unbekannt = "🤔 Den Code kenne ich nicht. Tippfehler? Fragt sonst die Spielleitung."
+# {team}
+chat_vergeben = "Dieser Chat gehört schon zu Team <b>{team}</b>."
+# {team}
+willkommen = '''
+🍻 Willkommen, Team <b>{team}</b>!
+
+ℹ️ Kurzer Hinweis: Alles, was ihr hier schreibt, alle Fotos, eure Check-in-Standorte und euer Live-Standort (falls ihr ihn teilt) kann die Spielleitung sehen. Nach dem Spiel wird das gelöscht.
+'''
+umgezogen = "(Euer Team war vorher mit einem anderen Chat verknüpft, ab jetzt gilt dieser hier.)"
+spiel_laeuft = "Das Spiel läuft schon, Karte und Regeln kommen sofort!"
+spiel_wartet = "Sobald die Spielleitung startet, bekommt ihr Karte und Regeln. Bis gleich!"
+
+
+[spiel]
+start = "🚦 <b>Los geht's!</b> Das Kneipenmonopoly ist eröffnet."
+pause = "⏸️ Kurze Pause! Gerade keine Check-ins. Eure laufenden Fristen sind angehalten."
+weiter = "▶️ Weiter geht's! Check-ins sind wieder offen."
+ende = "🏁 <b>Schluss!</b> Das Spiel ist vorbei. Fotos, die schon eingereicht sind, prüfen wir noch. Den Endstand bekommt ihr gleich."
+noch_vorbereitung = "⏳ Das Spiel hat noch nicht angefangen. Noch kurz gedulden!"
+gerade_pause = "⏸️ Gerade ist Pause, Check-ins gehen erst gleich wieder."
+vorbei = "🏁 Das Spiel ist vorbei. Danke fürs Mitspielen!"
+# {uhrzeit}
+noch_30_min = "⏳ Noch 30 Minuten! Um {uhrzeit} Uhr ist Schluss."
+# {uhrzeit}
+noch_10_min = "⏳ Noch 10 Minuten! Um {uhrzeit} Uhr ist Schluss."
+endstand_kopf = "🏆 <b>Endstand</b>"
+# {platz} = 🥇/🥈/🥉 oder „4.“, {team}, {punkte}
+endstand_zeile = "{platz} {team}: {punkte} Punkte"
+# {team}
+sieger = "Glückwunsch an <b>{team}</b>! 🍻"
+# {teams} = Namen der Sieger, mit „und“ verbunden
+sieger_gleichstand = "Gleichstand an der Spitze: {teams} teilen sich den Sieg! 🍻"
+
+
+[checkin]
+keine_felder = "Keine aktiven Felder gefunden. Meldet euch bei der Spielleitung."
+# {bar}, {meter}
+kein_feld_hier = "📍 Hier ist leider kein Spielfeld. Am nächsten ist <b>{bar}</b>, ca. {meter} m entfernt. Geht etwas näher ran und schickt den Standort nochmal!"
+mehrere_felder = "📍 Hier sind mehrere Felder in der Nähe. Wo seid ihr?"
+# {bar}, {meter}  (Text auf dem Auswahl-Button)
+auswahl_button = "{bar} ({meter} m)"
+auswahl_zu_alt = "Zu alt, schickt den Standort bitte nochmal."
+feld_unbekannt = "Unbekanntes Feld."
+# {bar}
+feld_inaktiv = "🚫 {bar} ist gerade nicht im Spiel."
+# {bar}, {meter}
+feld_zu_weit = "📍 {bar} ist ca. {meter} m weg. Etwas näher ran!"
+# {bar}
+eigene_bar = "🏠 {bar} gehört euch schon. Hier gibt's keine Punkte, also auf zur nächsten Bar!"
+foto_in_pruefung = "📸 Euer Foto hier wird noch geprüft. Etwas Geduld!"
+# {minuten}
+abklingzeit = "🕐 Hier wart ihr gerade erst. Wieder möglich in ca. {minuten} Min."
+
+testmodus_kopf = "🧪 <i>Testmodus: Check-in per Nummer, ohne echten Standort.</i>"
+# {bar}, {strasse}, {meter}
+eingecheckt_bar = "📍 Eingecheckt: <b>{bar}</b> ({strasse}), ca. {meter} m entfernt."
+# {bar}, {strasse}
+eingecheckt_bar_test = "📍 Eingecheckt: <b>{bar}</b> ({strasse})."
+# {bar}, {meter}
+eingecheckt_bahnhof = "📍 Eingecheckt: <b>{bar}</b> (Bahnhof), ca. {meter} m entfernt."
+# {bar}
+eingecheckt_bahnhof_test = "📍 Eingecheckt: <b>{bar}</b> (Bahnhof)."
+
+# Hinweis bei einer Bar ohne Besitzer, wenn KEIN anderes Team gerade drin ist.
+# Standard: leer = nichts anzeigen (ob die Bar wirklich frei ist, bleibt offen).
+# Beispiel zum Einschalten: "🆓 Die Bar ist frei! Geht das Foto durch, gehört sie euch: +{punkte}."
+# {punkte}
+frei_bar = ""
+# Wie oben für Bahnhöfe. {punkte}, {nummer} = der wievielte Bahnhof es für euch wäre
+frei_bahnhof = ""
+
+# Antwort, wenn ein Team seinen Live-Standort startet (löst keinen Check-in aus)
+live_gestartet = "📡 Live-Standort läuft, danke! Zum Einchecken in einer Bar schickt bitte zusätzlich einmal euren normalen Standort (📎 → Standort → „Aktuellen Standort senden“)."
+# Hinweis beim Check-in, wenn die Bar einem anderen Team gehört.
+# Standard: leer = nichts anzeigen (beim Check-in soll niemand wissen, wem die Bar gehört).
+# Beispiel zum Einschalten: "💸 Gehört Team <b>{team}</b>. Die bekommen {punkte} Punkte."
+# {team}, {punkte}
+besetzt_bar = ""
+# Wie oben, wenn dem Besitzer die ganze Straße gehört. {team}, {punkte}
+besetzt_bar_strasse = ""
+# Wie oben für Bahnhöfe. {team}, {punkte}, {anzahl} = Bahnhöfe des Besitzers
+besetzt_bahnhof = ""
+# Nur wenn POINTS_VISITOR > 0: Punkte für das besuchende Team. Leer = nicht anzeigen. {punkte}
+besucher_punkte = ""
+
+# Freie Bar, ein anderes Team ist schon eingecheckt. {teams} = Namen, mit „und“ verbunden
+wettrennen_bar = '''
+👀 Team {teams} ist auch schon hier! Ihr habt zwei Möglichkeiten:
+🍺 <b>Wettrennen:</b> Schnell sein! Wer zuerst das gültige Foto hochlädt, bekommt die Bar. Kommt euer Foto später, zählt es als Besuch, und der Besitzer kassiert.
+🥃 <b>Kurzen &amp; gehen:</b> Jede*r trinkt einen Kurzen, und ihr zieht weiter. Hier zählt dann nichts.
+'''
+# Wie oben, für Bahnhöfe. {teams}
+wettrennen_bahnhof = '''
+👀 Team {teams} ist auch schon hier! Ihr habt zwei Möglichkeiten:
+🍺 <b>Wettrennen:</b> Schnell sein! Wer zuerst das gültige Foto hochlädt, bekommt den Bahnhof. Kommt euer Foto später, zählt es als Besuch, und der Besitzer kassiert.
+🥃 <b>Kurzen &amp; gehen:</b> Jede*r trinkt einen Kurzen, und ihr zieht weiter. Hier zählt dann nichts.
+'''
+
+# {text} = Text der Ereigniskarte (Verwaltung)
+ereigniskarte = "🃏 <b>Ereigniskarte!</b> {text}"
+# {punkte}, {aufgabe}
+aufgabe = "🎯 <b>Aufgabe</b> (+{punkte} Bonus): {aufgabe}"
+# {faktor}
+multiplikator = "🔥 Gerade zählen alle Punkte {faktor}-fach!"
+# {uhrzeit} = Frist für das Foto
+foto_bar = "📸 Zum Abschluss das Beweisfoto: alle aus dem Team drauf, mit allen Bieren, die Bar erkennbar (Theke, Logo oder Karte). Ihr habt bis <b>{uhrzeit}</b> Uhr."
+# {uhrzeit}
+foto_bahnhof = "📸 Zum Abschluss das Beweisfoto: alle aus dem Team drauf, mit allen Bieren, der Kiosk erkennbar. Ihr habt bis <b>{uhrzeit}</b> Uhr."
+
+# Antwort auf „Kurzen & gehen“. {bar}
+kurzen_gehen = "🥃 Prost! Kurzen trinken und weiter zur nächsten Bar. In <b>{bar}</b> zählt für euch diesmal nichts."
+nicht_mehr_offen = "Dieser Check-in ist nicht mehr offen."
+# {bar}
+abgelaufen = "⏰ Euer Check-in bei <b>{bar}</b> ist abgelaufen, ohne Foto. Einfach neu einchecken!"
+
+
+[testmodus]
+nur_im_testmodus = "🧪 Check-in per Nummer geht nur im Testmodus. Schickt euren Standort!"
+# {kuerzel} = z.B. N/O/S/W, {erstes} = z.B. N
+feld_nicht_gefunden = "🤔 Feld nicht gefunden. Beispiel: <code>/checkin 15</code> für eine Bar oder <code>/checkin {erstes}</code> für einen Bahnhof ({kuerzel}). Nummern stehen bei /felder."
+# {kuerzel}
+hilfe = "🧪 <b>Testmodus aktiv:</b> Einchecken geht auch per Nummer, z.B. <code>/checkin 15</code> oder für Bahnhöfe <code>/checkin N</code> ({kuerzel})."
+felder = "🧪 Testmodus: <code>/checkin NUMMER</code> bzw. <code>/checkin N</code> zum Einchecken."
+
+
+[foto]
+ohne_checkin = "📍 Schönes Foto! Damit es zählt, erst per Standort in einer Bar einchecken, dann das Foto schicken."
+spiel_vorbei = "🏁 Das Spiel ist vorbei, neue Fotos zählen nicht mehr."
+zu_spaet = "⏰ Zu spät, der Check-in ist abgelaufen. Einfach neu einchecken!"
+eingereicht = "📸 Foto eingereicht, wird geprüft. Ihr könnt schon weiterziehen!"
+
+# Nachricht nach der Freigabe. {bar}
+akzeptiert = "✅ Foto für <b>{bar}</b> akzeptiert!"
+# {punkte}
+bar_gehoert_euch = "🏠 Die Bar gehört jetzt euch: +{punkte}"
+# {punkte}
+bahnhof_gehoert_euch = "🚉 Der Bahnhof gehört jetzt euch: +{punkte}"
+# {punkte}
+vorbeischauen = "👋 Fürs Vorbeischauen: +{punkte}"
+# {punkte}
+aufgabe_erfuellt = "🎯 Aufgabe erfüllt: +{punkte}"
+# {strasse}, {punkte}
+strasse_komplett = "🎉 Straße <b>{strasse}</b> komplett! Bonus +{punkte}"
+# {strasse}, {punkte} (negativ)
+strasse_verloren = "Straße {strasse} nicht mehr komplett: {punkte}"
+# {team} = Besitzer, {punkte}
+besitzer_kassiert = "💸 Gehört Team <b>{team}</b>, die kassieren +{punkte}."
+schon_eure_bar = "Die Bar gehört euch ja schon."
+
+# An den Besitzer, wenn ein anderes Team bei ihm war. {team} = Besucher, {bar}, {punkte}
+an_besitzer = "💰 Team <b>{team}</b> war bei euch in <b>{bar}</b>: +{punkte} für euch!"
+# Wie oben, wenn dem Besitzer die ganze Straße gehört
+an_besitzer_strasse = "💰 Team <b>{team}</b> war bei euch in <b>{bar}</b>: +{punkte} für euch (ganze Straße, doppelt!)!"
+# An alle anderen Teams. {team}, {strasse}
+strasse_info_alle = "📢 Team <b>{team}</b> hat die Straße <b>{strasse}</b> komplett!"
+
+# {bar}, {grund}
+abgelehnt = "❌ Foto für <b>{bar}</b> abgelehnt: {grund}"
+# {uhrzeit}
+abgelehnt_neues_foto = "Schickt einfach ein neues Foto, ihr habt bis <b>{uhrzeit}</b> Uhr."
+abgelehnt_woanders = "Ihr seid schon woanders eingecheckt. Für diese Bar müsstet ihr neu einchecken."
+kein_grund = "kein Grund angegeben"
+
+
+[aktion]
+schon_offen = "📞 Ihr habt schon eine offene Anfrage. Wartet bitte auf den Videoanruf!"
+keine_karten = "🎬 Aktionskarten gibt's gerade noch nicht. Fragt die Spielleitung!"
+alle_gespielt = "🎬 Ihr habt schon alle Aktionskarten gespielt. Respekt!"
+# {karte}, {plus}, {minus}, {wo} = Text aus aktion.wo_zuletzt (oder leer), {rest} = übrige Karten
+gezogen = '''
+🎬 <b>Aktionskarte:</b> {karte}
+
+Geschafft: +{plus}, nicht geschafft: {minus}.
+
+📞 <b>Wartet kurz:</b> Die Spielleitung ruft euch gleich per Videoanruf in dieser Gruppe an und schaut zu.{wo} Noch {rest} Aktionskarte(n) übrig.
+'''
+# {bar}
+wo_zuletzt = " Ihr seid zuletzt in <b>{bar}</b> eingecheckt, bleibt dort."
+# {punkte} = z.B. +1
+geschafft = "✅ <b>Aktion geschafft!</b> {punkte}"
+# {punkte} = z.B. -1
+nicht_geschafft = "❌ <b>Aktion nicht geschafft.</b> {punkte}"
+abgebrochen = "🚫 Die Spielleitung hat eure Aktion abgebrochen. Die Aktionskarte geht zurück in den Stapel."
+
+
+[ereignis]
+# Ereigniskarten, die sofort an alle gehen (z.B. doppelte Punkte). {text} = Text der Karte
+an_alle = "🃏 <b>Ereigniskarte!</b> {text}"
+
+
+[korrektur]
+# {was} = was geändert wurde, {alt}, {neu} = Punktestand vorher/nachher
+punkte = '''
+↩️ Korrektur der Spielleitung: {was}
+Euer Punktestand: {alt} → <b>{neu}</b>
+'''
+# {bar}, {kommentar} = Text aus korrektur.kommentar oder leer
+freigabe_zurueck = "↩️ Die Freigabe für {bar} wurde zurückgenommen.{kommentar}"
+# {bar}, {team} = neuer Besitzer oder „niemandem“, {kommentar}
+besitzer = "↩️ Korrektur der Spielleitung: {bar} gehört jetzt {team}.{kommentar}"
+# {text}
+kommentar = " ({text})"
+niemand = "niemandem"
+# {bar}
+deaktiviert = "🚫 Planänderung: <b>{bar}</b> ist raus aus dem Spiel. Wem sie gehört, behält sie."
+# {bar}
+reaktiviert = "✅ <b>{bar}</b> ist wieder im Spiel."
+# {alt}, {neu}, {adresse}, {strasse}
+ersetzt = "🔁 Planänderung: Statt <b>{alt}</b> zählt jetzt <b>{neu}</b> ({adresse}), gleiche Straße {strasse}. Besitz bleibt."
+
+
+[regeln]
+# Platzhalter: {frist}, {frei}, {miete}, {miete_strasse}, {besucher}, {strassenbonus},
+# {bahnhof_punkte}, {aufgabe}, {aktion_plus}, {aktion_minus}, {abklingzeit}, {endzeit}
+# {besucher} = Text aus regeln.besucher oder leer, {endzeit} = Text aus regeln.endzeit oder leer
+text = '''
+📜 <b>Kneipenmonopoly – die Regeln</b>
+
+1️⃣ Geht in eine Bar von der Karte und schickt hier euren <b>Standort</b> (📎 → Standort).
+2️⃣ Danach habt ihr {frist} Min. für das <b>Abschlussfoto</b>: alle drauf, mit allen Bieren, Bar erkennbar.
+3️⃣ Die Spielleitung prüft das Foto. Erst dann gibt's Punkte.
+
+🆓 Freie Bar: gehört euch, +{frei}
+💸 Fremde Bar: der Besitzer bekommt +{miete}, bei kompletter Straße +{miete_strasse}{besucher}
+👀 <b>Anderes Team schon in einer freien Bar?</b> Wettrennen: Wer zuerst das Foto hochlädt, bekommt die Bar. Oder 🥃 <b>Kurzen &amp; gehen</b>: Kurzen trinken, weiterziehen, hier zählt nichts.
+🎉 Straße komplett: einmalig +{strassenbonus}
+🚉 Bahnhöfe: Punkte nach Anzahl Bahnhöfe des Besitzers ({bahnhof_punkte})
+🎯 Aufgaben bringen +{aufgabe}
+🎬 <b>Aktionskarten:</b> Button „Aktionskarte ziehen“ drücken (kommt beim Check-in und bei /stand). Die Spielleitung ruft euch per Video an. Geschafft +{aktion_plus}, nicht geschafft {aktion_minus}.
+🃏 <b>Ereigniskarten</b> tauchen im Lauf des Abends auf. Lasst euch überraschen!
+🕐 Dieselbe fremde Bar erst wieder nach {abklingzeit} Min.
+🏠 In der eigenen Bar gibt's nichts.
+
+Am Ende gewinnt, wer die meisten Punkte hat.{endzeit}
+
+Befehle: /stand /felder /karte /regeln
+Bitte trinkt verantwortungsvoll und passt auf euch auf! 🍻
+'''
+# {punkte}
+besucher = ", ihr +{punkte}"
+# {uhrzeit}
+endzeit = '''
+
+⏰ Schluss ist um <b>{uhrzeit}</b> Uhr.'''
+
+
+[hilfe]
+text = '''
+🍻 <b>Kneipenmonopoly-Bot</b>
+
+/join CODE – Chat mit eurem Team verknüpfen
+/stand – Punktestand und eure Felder
+/felder – welche Felder frei sind und wem was gehört
+/karte – Karte nochmal schicken
+/regeln – die Regeln
+
+Einchecken: Standort schicken. Danach Foto schicken.
+'''
+
+
+[stand]
+# {punkte}
+geheim = '''
+🙈 Der Gesamtstand bleibt bis zum Ende geheim.
+Eure Punkte: <b>{punkte}</b>
+'''
+kopf = "📊 <b>Punktestand</b>"
+# {platz}, {team}, {punkte}
+zeile = "{platz}. {team}: {punkte}"
+# Wie zeile, für das eigene Team
+zeile_ich = "{platz}. {team}: {punkte} ⬅️"
+eure_felder = "🏠 <b>Eure Felder</b>"
+# {feld}, {art} = Straße oder „Bahnhof“
+feld = "• {feld} ({art})"
+bahnhof = "Bahnhof"
+# {strasse}
+strasse_komplett = "{strasse} ✅"
+keine_felder = "Noch keine eigenen Felder. Auf geht's!"
+# {bar}, {uhrzeit}
+offener_checkin = "📍 Offener Check-in: {bar}, Foto bis {uhrzeit} Uhr."
+# {anzahl}
+fotos_in_pruefung = "📸 {anzahl} Foto(s) in Prüfung."
+wartet_auf_anruf = "📞 Ihr wartet auf einen Videoanruf der Spielleitung."
+# {anzahl}
+aktionskarten_uebrig = "🎬 Noch {anzahl} Aktionskarte(n) übrig."
+# {faktor}
+multiplikator = "🔥 Gerade zählen alle Punkte {faktor}-fach!"
+
+
+[felder]
+kopf = "🗺️ <b>Felder</b>"
+# {strasse}
+strasse = "<b>{strasse}</b>"
+# {strasse}, {team}
+strasse_komplett = "<b>{strasse}</b> – komplett: {team}"
+# {nummer}, {bar}, {status}
+zeile = "{nummer}. {bar}: {status}"
+# {team}
+besitzer = "👑 {team}"
+frei = "🆓 frei"
+geschlossen = " (geschlossen)"
+bahnhoefe = "<b>Bahnhöfe</b>"
+# {kuerzel}, {bahnhof}, {status}
+bahnhof_zeile = "{kuerzel}. {bahnhof}: {status}"

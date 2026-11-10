@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Protokoll{% endblock %}
+{% block content %}
+<h1>Ereignisprotokoll</h1>
+<div class="card row">
+  <a class="btn" href="/export/stand.csv">Endstand CSV</a>
+  <a class="btn" href="/export/protokoll.csv">Protokoll CSV</a>
+  <a class="btn" href="/export/spiel.json">Alles als JSON</a>
+</div>
+<div class="card">
+<table class="table">
+  <thead><tr><th>#</th><th>Zeit</th><th>Admin</th><th>Ereignis</th><th>Buchungen</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="{{ 'revoked' if r.revoked else '' }}">
+      <td>{{ r.id }}</td>
+      <td>{{ r.time }}</td>
+      <td>{{ r.actor }}</td>
+      <td>{{ r.text }}{% if r.revoked %} <span class="tag">zurückgenommen</span>{% endif %}</td>
+      <td class="small">
+        {% for team, delta, text in r.entries %}<div>{{ team }} <b>{{ '%+d'|format(delta) }}</b> {{ text }}</div>{% endfor %}
+      </td>
+      <td>
+        {% if r.revocable %}
+        <form method="post" action="/protokoll/{{ r.id }}/zuruecknehmen" class="row nowrap"
+              onsubmit="return confirm('Ereignis #{{ r.id }} wirklich zurücknehmen? Der Stand wird neu berechnet.')">
+          <input name="comment" placeholder="Grund" size="10">
+          <button class="btn small bad" type="submit">↩️</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Noch keine Ereignisse.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

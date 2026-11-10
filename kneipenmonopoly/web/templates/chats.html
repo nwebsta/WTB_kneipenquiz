@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Chats{% endblock %}
+{% block content %}
+<h1>Chats</h1>
+<div class="card">
+  <form method="get" action="/chats" class="row">
+    <label>Team
+      <select name="team" onchange="this.form.submit()">
+        <option value="">alle Chats</option>
+        {% for t in teams %}<option value="{{ t.id }}" {% if team_filter == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+        <option value="frei" {% if filter_key == 'frei' %}selected{% endif %}>nicht verknüpfte Chats ({{ n_unlinked }})</option>
+      </select>
+    </label>
+  </form>
+  {% if filter_key == 'frei' %}
+    <p class="muted small">Gruppen, die dem Bot geschrieben haben, aber noch keinem Team zugeordnet sind, etwa vor dem
+       <code>/join</code> oder nach einem falschen Code. Zum Verknüpfen schickt die Gruppe <code>/join CODE</code>.</p>
+  {% endif %}
+  <form method="post" action="/chats/senden" class="row">
+    <select name="target">
+      <option value="alle">an alle Teams</option>
+      {% for t in teams %}<option value="{{ t.id }}" {% if team_filter == t.id %}selected{% endif %}>an {{ t.name }}</option>{% endfor %}
+    </select>
+    <input name="text" placeholder="Nachricht der Spielleitung" required class="grow">
+    <button class="btn primary" type="submit">Senden</button>
+  </form>
+</div>
+<div id="chatlog" hx-get="/partials/chats{% if filter_key %}?team={{ filter_key }}{% endif %}" hx-trigger="every 5s" hx-swap="innerHTML">
+  {% include "_chats.html" %}
+</div>
+{% endblock %}
