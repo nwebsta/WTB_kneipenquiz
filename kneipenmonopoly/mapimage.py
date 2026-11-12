@@ -355,11 +355,6 @@ def _legend(spec: MapSpec, min_h: int) -> Image.Image:
     if spec.stations:
         rows.append(("h", "Bahnhöfe"))
         rows += [("station", s) for s in spec.stations]
-    if spec.reserve:
-        rows.append(("h", "Reserve (Ersatzfelder)"))
-        rows += [("reserve", r) for r in spec.reserve]
-    rows.append(("h", "Zeichen"))
-    rows.append(("key", None))
 
     heights = {"title": 52, "sub": 46, "h": 52, "group": 42, "field": 30, "station": 30, "reserve": 26, "key": 130}
     H = max(min_h, sum(heights[k] for k, _ in rows) + 40)
