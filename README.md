@@ -222,7 +222,7 @@ Telegram-Verknüpfungen, Spielstand, Chats, Fotos und Passwörter werden nicht �
 Mit **Nur Kneipen/Bahnhöfe exportieren** bekommst du die Karte im Format der Spieldaten-Datei, etwa um einen Kiosk
 zu verschieben. Nach dem Bearbeiten lädst du sie genauso wieder hoch. Importierte Kneipen liegen in
 `data/spieldaten.json` und gelten vor der Datei aus dem Repository. **Import verwerfen** stellt den Repository-Stand
-wieder her. Die Karten-PDF ändert sich dabei nicht. Wer Kioske verschiebt, braucht eine neue PDF.
+wieder her. Die Spielkarte für die Teams wird automatisch aus den importierten Daten neu gezeichnet (siehe **Spielkarte**).
 
 | Option | Wirkung |
 |---|---|
@@ -291,7 +291,7 @@ Läuft der Server im Heimnetz, verbinden sich die Admins per VPN ins Heimnetz un
 5. Alle Admins, die Videoanrufe machen, treten den Team-Gruppen in Telegram bei.
 6. **Spieldauer** (H:MM, z.B. 3:00) eintragen. Beim Start bekommen die Teams „Ihr habt 3 Stunden Spielzeit, Schluss ca. um …“.
 
-**Start:** Verwaltung → **Spiel starten**. Alle Teams bekommen die Karten-PDF und die Regeln.
+**Start:** Verwaltung → **Spiel starten**. Alle Teams bekommen die Spielkarte als Bild und die Regeln.
 
 **Währenddessen:**
 
@@ -345,6 +345,25 @@ Das Dashboard zeigt, was gerade passiert. Karte, Prüfen und Chats zeigen alles 
 - **Fotos und Aktionen automatisch freigeben:** Sonst prüfst du selbst unter Prüfen.
 - **Bot-Nachrichten wirklich senden:** Ohne diesen Haken bleiben die Telegram-Gruppen ruhig. Die Antworten des Bots stehen dann nur in den Chats der Admin-Seite.
 - Die Simulation schreibt in den echten Spielstand. Danach **Spiel zurücksetzen**, das stoppt sie auch.
+
+### Spielkarte
+
+Die Teams bekommen die Karte beim Spielstart und mit `/karte` als **Bild**. Der Server zeichnet es selbst aus
+den aktiven Spieldaten, also auch aus importierten eigenen Kneipen:
+
+- **Hintergrund:** OpenStreetMap
+- **Straßen:** farbige Verbindungslinien
+- **Felder:** nummerierte Punkte, Kneipen größer mit schwarzem Rand, Bahnhöfe als Quadrate mit Buchstaben, Reserve-Bars grau
+- **Legende:** rechts daneben, wie in der PDF
+
+Liegen Felder sehr dicht beieinander, werden die Punkte leicht auseinandergerückt. Ein kurzer Strich zeigt dann
+auf die echte Stelle. Ersetzte oder geschlossene Bars sind berücksichtigt. Besitzer stehen nie auf der Karte.
+
+Verwaltung → **Spielkarte**: **Vorschau erzeugen** zeichnet das Bild sofort und zeigt es an, zum Prüfen oder
+Herunterladen. Sonst wird es automatisch neu gezeichnet, sobald sich Kneipen oder Straßen geändert haben.
+Die Kartenkacheln werden in `data/tiles/` gespeichert. Ohne Internet entsteht ein Bild ohne Stadtplan-Hintergrund,
+und die Verwaltung weist darauf hin. Klappt das Bild gar nicht, schickt der Bot ersatzweise die PDF.
+`MAP_TILES=false` in der `.env` schaltet den Hintergrund ab.
 
 ### Testmodus für Demo und Probelauf
 
@@ -439,7 +458,7 @@ Danach wieder auf `data` umstellen.
 - [ ] Privacy Mode ist aus. Ein Text in der Gruppe taucht unter **Chats** auf.
 - [ ] `/join` mit falschem Code liefert eine freundliche Fehlermeldung, mit richtigem Code den Datenschutzhinweis.
 - [ ] Beide Test-Teams sind verknüpft. Im Dashboard steht kein „kein Chat“ mehr.
-- [ ] **Spiel starten:** Beide Gruppen bekommen Karten-PDF und Regeln.
+- [ ] Verwaltung → Spielkarte → **Vorschau erzeugen**: Bild prüfen (alle Nummern lesbar, Bahnhöfe richtig).
 
 **Check-in und Foto**
 
@@ -527,7 +546,7 @@ deploy/          install.sh: Installation und Update auf Linux-Servern
   Ereignisse nach Protokollzeit. Die Doppelt-Karte trägt ihre fällige Uhrzeit. Dadurch zählt die Uploadzeit.
 - **Doppelte Freigabe:** Die Freigabe läuft in einer Transaktion und setzt den Status nur, wenn er noch „offen“ ist.
 - **Fotos:** liegen in `data/photos/`. Die Telegram-`file_unique_id` verhindert doppeltes Herunterladen.
-  Die Karten-PDF wird nur einmal hochgeladen, danach nutzt der Bot die gemerkte `file_id`.
+  Das Kartenbild wird nur einmal hochgeladen, danach nutzt der Bot die gemerkte `file_id`, bis sich die Karte ändert.
 - **Zeitzone:** Gespeichert wird in UTC, angezeigt in `Europe/Berlin`.
 - **Optionale Spielfeldgrenze:** Ein Schlüssel `"boundary": [[lat, lon], ...]` in der Spieldaten-JSON wird auf der
   Admin-Karte als gestricheltes Polygon gezeichnet. Die mitgelieferte JSON enthält ihn noch nicht.

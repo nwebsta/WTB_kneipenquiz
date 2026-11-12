@@ -85,7 +85,7 @@ fi
 say "Systempakete installieren"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq python3 python3-venv git curl ca-certificates openssl >/dev/null
+apt-get install -y -qq python3 python3-venv git curl ca-certificates openssl fonts-dejavu-core >/dev/null
 echo "    ok"
 
 # --- 3. Python 3.11+ (sonst über uv herunterladen) -------------------------------

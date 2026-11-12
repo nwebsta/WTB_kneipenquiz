@@ -5,7 +5,7 @@
 <nav class="subnav">
   <a href="#spiel">Spiel</a> <a href="#teams">Teams</a> <a href="#korrektur">Korrekturen</a>
   <a href="#felder">Felder</a> <a href="#aufgaben">Zufallsaufgaben</a> <a href="#ereignisse">Ereigniskarten</a>
-  <a href="#aktionen">Aktionskarten</a> <a href="#import">Export/Import</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
+  <a href="#aktionen">Aktionskarten</a> <a href="#spielkarte">Spielkarte</a> <a href="#import">Export/Import</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
   <a href="#datenschutz">Datenschutz</a>
 </nav>
 
@@ -235,6 +235,34 @@
     <input name="text" placeholder="z.B. Singt den Refrain von ... mit der ganzen Bar" required class="grow">
     <button class="btn">Hinzufügen</button>
   </form>
+</section>
+
+<section class="card" id="spielkarte">
+  <h2>Spielkarte (Bild für die Teams)</h2>
+  <p>Die Teams bekommen beim Spielstart und mit <code>/karte</code> dieses Bild. Es wird aus den aktuellen Kneipen und
+     Straßen erzeugt, auch aus importierten. Ersetzte oder geschlossene Bars sind berücksichtigt, Besitzer nie.
+     Ändert sich etwas, wird es beim nächsten Abruf automatisch neu gezeichnet.</p>
+  <p class="small muted">
+    {% if map_status.exists %}
+      Stand: {{ map_status.generated or '?' }} Uhr{% if map_status.size %}, {{ map_status.size }} Pixel{% endif %}
+      {% if map_status.outdated %} · <b class="warn-text">veraltet, wird beim nächsten Abruf neu gezeichnet</b>{% endif %}
+      {% if map_status.tiles == false %} · <b class="warn-text">ohne Kartenhintergrund (OpenStreetMap nicht erreichbar)</b>{% endif %}
+    {% else %}
+      Noch nicht erzeugt. Das erste Zeichnen lädt die Kartenkacheln und dauert ein paar Sekunden.
+    {% endif %}
+  </p>
+  <div class="row">
+    <form method="post" action="/verwaltung/karte/rendern"><button class="btn primary">🗺️ Vorschau erzeugen</button></form>
+    {% if map_status.exists %}
+      <a class="btn" href="/karte/bild.jpg?v={{ map_status.signature }}" target="_blank">In voller Größe öffnen</a>
+      <a class="btn" href="/karte/bild.jpg?download=1">⬇️ Herunterladen</a>
+    {% endif %}
+  </div>
+  {% if map_status.exists %}
+    <a href="/karte/bild.jpg?v={{ map_status.signature }}" target="_blank">
+      <img src="/karte/bild.jpg?v={{ map_status.signature }}" alt="Spielkarte" style="width:100%;max-width:900px;border:1px solid var(--line);border-radius:8px;margin-top:.5rem">
+    </a>
+  {% endif %}
 </section>
 
 <section class="card" id="import">

@@ -45,6 +45,7 @@ class Settings:
     checkin_timeout_min: int = 20
     cooldown_min: int = 30
     game_duration_min: int | None = None   # Standard-Spieldauer, in der Verwaltung änderbar
+    map_tiles: bool = True                 # Kartenbild mit OpenStreetMap-Hintergrund (braucht Internet)
     random_tasks_enabled: bool = True
     announce_street_complete: bool = True
     scores_hidden_default: bool = False
@@ -62,6 +63,14 @@ class Settings:
     @property
     def photo_dir(self) -> Path:
         return self.data_dir / "photos"
+
+    @property
+    def map_image_path(self) -> Path:
+        return self.data_dir / "karte.jpg"
+
+    @property
+    def tile_cache_dir(self) -> Path:
+        return self.data_dir / "tiles"
 
     @property
     def imported_game_data_path(self) -> Path:
@@ -113,6 +122,7 @@ def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None 
         checkin_timeout_min=_int(env, "CHECKIN_TIMEOUT_MIN", 20),
         cooldown_min=_int(env, "COOLDOWN_MIN", 30),
         game_duration_min=_int(env, "GAME_DURATION_MIN", 0) or None,
+        map_tiles=_bool(env.get("MAP_TILES"), True),
         random_tasks_enabled=_bool(env.get("RANDOM_TASKS_ENABLED"), True),
         announce_street_complete=_bool(env.get("ANNOUNCE_STREET_COMPLETE"), True),
         scores_hidden_default=_bool(env.get("SCORES_HIDDEN"), False),

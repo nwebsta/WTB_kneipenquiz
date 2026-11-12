@@ -369,7 +369,7 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
                       event_cards=event_card_rows(g), card_kinds=EVENT_CARD_KINDS, action_cards=g.action_cards(),
                       reserve=list(g.data.reserve.values()), used_reserve=used_reserve,
                       random_tasks=g.random_tasks(), hidden=g.scores_hidden(), clock=clock_ctx(g),
-                      setup_parts=SETUP_PARTS, game_data_source=g.game_data_source(),
+                      setup_parts=SETUP_PARTS, game_data_source=g.game_data_source(), map_status=g.map_status(),
                       game_data_imported=g.s.imported_game_data_path.exists(),
                       points=st.points)
 
@@ -603,6 +603,37 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
+
+    # ---------------------------------------------------------------- Spielkarte (Bild)
+    @app.get("/karte/bild.jpg")
+    async def map_image(request: Request, download: int = 0):
+        admin(request)
+        try:
+            path = await G(request).ensure_map_image()
+        except Exception as e:
+            log.exception("Kartenbild fehlgeschlagen")
+            return PlainTextResponse(f"Kartenbild konnte nicht erzeugt werden: {e}", status_code=500)
+        headers = {"Cache-Control": "private, no-cache"}
+        if download:
+            headers["Content-Disposition"] = f'attachment; filename="spielkarte-{_stamp()}.jpg"'
+        return FileResponse(path, media_type="image/jpeg", headers=headers)
+
+    @app.post("/verwaltung/karte/rendern")
+    async def map_render(request: Request):
+        admin(request)
+        g = G(request)
+        try:
+            await g.ensure_map_image(force=True)
+        except Exception as e:
+            log.exception("Kartenbild fehlgeschlagen")
+            flash(request, f"Kartenbild konnte nicht erzeugt werden: {e}", False)
+            return back("/verwaltung#spielkarte")
+        st = g.map_status()
+        msg = f"Kartenbild neu erzeugt ({st['size']} Pixel)."
+        if g.s.map_tiles and not st["tiles"]:
+            msg += " Ohne Kartenhintergrund: OpenStreetMap war nicht erreichbar."
+        flash(request, msg, True)
+        return back("/verwaltung#spielkarte")
 
     # ---------------------------------------------------------------- Setup übertragen
     @app.get("/export/setup.json")

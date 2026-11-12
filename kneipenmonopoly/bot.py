@@ -51,6 +51,32 @@ class TelegramNotifier:
             cid, text, parse_mode=ParseMode.HTML, disable_web_page_preview=True, reply_markup=keyboard(buttons)))
 
     async def send_map(self, chat_id: int, caption: str) -> None:
+        """Spielkarte als Bild, aus den aktuellen Spieldaten erzeugt. Fällt bei Problemen auf die PDF zurück."""
+        try:
+            path = await self.game.ensure_map_image()
+            sig = self.game.db.get_kv("map_image_hash")
+            cached = self.game.db.get_kv("map_photo_id") if self.game.db.get_kv("map_photo_hash") == sig else None
+            if cached:
+                try:
+                    await self._migrated(chat_id, lambda cid: self.app.bot.send_photo(cid, cached, caption=caption))
+                    return
+                except TelegramError:
+                    log.warning("Gecachtes Kartenbild ungültig, lade neu hoch")
+
+            async def upload_photo(cid):
+                with path.open("rb") as fh:
+                    return await self.app.bot.send_photo(cid, fh, caption=caption)
+
+            msg = await self._migrated(chat_id, upload_photo)
+            if msg.photo:
+                self.game.db.set_kv("map_photo_id", msg.photo[-1].file_id)
+                self.game.db.set_kv("map_photo_hash", sig)
+            return
+        except Exception:
+            log.exception("Kartenbild konnte nicht gesendet werden, nehme die PDF")
+        await self._send_pdf(chat_id, caption)
+
+    async def _send_pdf(self, chat_id: int, caption: str) -> None:
         cached = self.game.db.get_kv("map_file_id")
         if cached:
             try:

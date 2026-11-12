@@ -5,6 +5,7 @@ wird immer aus dem Ereignisprotokoll berechnet (rules.replay).
 """
 from __future__ import annotations
 
+import asyncio
 import csv
 import html
 import io
@@ -22,6 +23,7 @@ from . import rules as R
 from .config import Settings
 from .db import DB
 from .gamedata import GameData, GameDataError, distance_m, parse_game_data
+from .mapimage import MapField, MapGroup, MapReserve, MapSpec, MapStation, render_map
 from .texts import Raw, Texts
 
 log = logging.getLogger(__name__)
@@ -1468,6 +1470,65 @@ class Game:
             w.writerow([r["id"], local, r["actor"], r["type"], r["text"], "ja" if r["revoked"] else "",
                         bookings, json.dumps(r["data"], ensure_ascii=False)])
         return buf.getvalue()
+
+    # =========================================================================
+    # Spielkarte als Bild (Telegram + Vorschau)
+    # =========================================================================
+    def map_spec(self) -> MapSpec:
+        """Kartenbeschreibung aus den aktiven Spieldaten (inkl. ersetzter/geschlossener Bars). Ohne Besitzer."""
+        st = self.state()
+        letters = {sid: letter for letter, sid in self.station_letters().items()}
+        groups = []
+        for g in self.data.groups.values():
+            fields = []
+            for fid in g.field_ids:
+                sp = self.spot(fid, st)
+                fields.append(MapField(sp.no, sp.name, sp.lat, sp.lon, sp.address, sp.is_kneipe, sp.active))
+            groups.append(MapGroup(g.name, g.color, fields))
+        stations = []
+        for sid in self.data.stations:
+            sp = self.spot(sid, st)
+            stations.append(MapStation(letters.get(sid, "?"), sp.name, sp.address, sp.lat, sp.lon, sp.active))
+        used = set(st.replaced.values())
+        free_reserve = [r for r in self.data.reserve.values() if r.id not in used]
+        reserve = [MapReserve(chr(ord("a") + i) if i < 26 else str(i), r.name, r.address, r.lat, r.lon)
+                   for i, r in enumerate(free_reserve)]
+        return MapSpec(self.data.game, groups, stations, reserve, list(self.data.boundary))
+
+    def map_signature(self, spec: MapSpec | None = None) -> str:
+        import hashlib
+        from dataclasses import asdict
+        raw = json.dumps(asdict(spec or self.map_spec()), ensure_ascii=False, sort_keys=True) + str(self.s.map_tiles)
+        return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+    def map_status(self) -> dict:
+        path = self.s.map_image_path
+        info = json.loads(self.db.get_kv("map_image_info") or "{}")
+        current = self.map_signature()
+        return {
+            "exists": path.exists(),
+            "signature": current,
+            "outdated": path.exists() and self.db.get_kv("map_image_hash") != current,
+            "generated": self.hm(info["at"]) if info.get("at") else None,
+            "tiles": info.get("tiles"),
+            "size": f"{info.get('width')}×{info.get('height')}" if info.get("width") else None,
+        }
+
+    async def ensure_map_image(self, force: bool = False) -> Path:
+        """Kartenbild aktuell halten: nur neu zeichnen, wenn sich Kneipen/Straßen geändert haben."""
+        path = self.s.map_image_path
+        spec = self.map_spec()
+        sig = self.map_signature(spec)
+        info = json.loads(self.db.get_kv("map_image_info") or "{}")
+        fresh = path.exists() and self.db.get_kv("map_image_hash") == sig
+        tiles_missing = self.s.map_tiles and info.get("tiles") is False   # letzter Versuch ohne Internet
+        if fresh and not force and not tiles_missing:
+            return path
+        result = await asyncio.to_thread(render_map, spec, path, self.s.tile_cache_dir, self.s.map_tiles)
+        result["at"] = iso(self.clock())
+        self.db.set_kv("map_image_hash", sig)
+        self.db.set_kv("map_image_info", json.dumps(result))
+        return path
 
     # =========================================================================
     # Setup exportieren / importieren (z.B. vom Laptop auf den Server)
