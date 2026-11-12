@@ -5,7 +5,7 @@
 <nav class="subnav">
   <a href="#spiel">Spiel</a> <a href="#teams">Teams</a> <a href="#korrektur">Korrekturen</a>
   <a href="#felder">Felder</a> <a href="#aufgaben">Zufallsaufgaben</a> <a href="#ereignisse">Ereigniskarten</a>
-  <a href="#aktionen">Aktionskarten</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
+  <a href="#aktionen">Aktionskarten</a> <a href="#import">Export/Import</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
   <a href="#datenschutz">Datenschutz</a>
 </nav>
 
@@ -235,6 +235,40 @@
     <input name="text" placeholder="z.B. Singt den Refrain von ... mit der ganzen Bar" required class="grow">
     <button class="btn">Hinzufügen</button>
   </form>
+</section>
+
+<section class="card" id="import">
+  <h2>Export / Import</h2>
+  <p>Damit überträgst du die Einrichtung von einem Rechner auf den anderen, z.B. vom Laptop auf den Server.
+     Spielstand, Chats, Fotos, Telegram-Verknüpfungen und Passwörter werden <b>nicht</b> übertragen.</p>
+  <div class="row">
+    <a class="btn primary" href="/export/setup.json">⬇️ Setup exportieren</a>
+    <a class="btn" href="/export/spieldaten.json">⬇️ Nur Kneipen/Bahnhöfe exportieren</a>
+  </div>
+  <p class="small muted">Kneipen auf der Karte: {{ game_data_source }}.
+    {% if game_data_imported and phase == 'setup' %}
+      <form method="post" action="/verwaltung/spieldaten/zuruecksetzen" style="display:inline"
+            onsubmit="return confirm('Importierte Kneipen verwerfen und wieder die Datei aus dem Repository nutzen?')">
+        <button class="btn small">Import verwerfen</button></form>
+    {% endif %}
+  </p>
+  {% if phase == 'setup' %}
+  <form method="post" action="/verwaltung/import" enctype="multipart/form-data"
+        onsubmit="return confirm('Gewählte Teile importieren? Aktionskarten, Ereigniskarten und Aufgaben werden dabei ersetzt.')">
+    <div class="row"><input type="file" name="datei" accept=".json,application/json" required></div>
+    <div class="row">
+      {% for key, label in setup_parts.items() %}
+        <label class="check"><input type="checkbox" name="teil" value="{{ key }}" checked> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <p class="muted small">Teams werden ergänzt oder aktualisiert (gleicher Name), nie gelöscht. Aktionskarten,
+       Ereigniskarten und Aufgaben werden durch die aus der Datei ersetzt. Eine reine Kneipen-Datei
+       (Format wie <code>kneipenmonopoly_spieldaten.json</code>) geht auch.</p>
+    <button class="btn primary">⬆️ Importieren</button>
+  </form>
+  {% else %}
+    <p class="flash err">Importieren geht nur in der Vorbereitung: vor dem Spielstart oder nach „Spiel zurücksetzen“.</p>
+  {% endif %}
 </section>
 
 <section class="card" id="simulation">

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import html
+import json
 import logging
 import re
 import secrets
@@ -19,7 +20,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from ..config import Settings
 from ..db import DB
 from ..gamedata import load_game_data
-from ..service import EVENT_CARD_KINDS, PHASE_LABEL, Game, fmt_duration, parse_iso
+from ..service import EVENT_CARD_KINDS, PHASE_LABEL, SETUP_PARTS, Game, fmt_duration, parse_iso
 from ..simulation import SPEEDS, Simulator
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ QUICK_REASONS = [
 # Nach "Spiel zurücksetzen" beginnen die IDs wieder bei 1. Deshalb tragen die Bild-URLs die
 # Telegram-file_unique_id (?v=...), und der Browser muss vor jeder Nutzung nachfragen (ETag -> 304).
 PHOTO_CACHE = {"Cache-Control": "private, no-cache"}
+MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 
 class NotLoggedIn(Exception):
@@ -90,7 +92,7 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
     async def lifespan(app: FastAPI):
         g = game
         if g is None:
-            data = load_game_data(settings.game_data_path)
+            data = load_game_data(settings.active_game_data_path)
             g = Game(settings, data, DB(settings.db_path))
         app.state.game = g
         app.state.sim = Simulator(g)
@@ -367,6 +369,8 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
                       event_cards=event_card_rows(g), card_kinds=EVENT_CARD_KINDS, action_cards=g.action_cards(),
                       reserve=list(g.data.reserve.values()), used_reserve=used_reserve,
                       random_tasks=g.random_tasks(), hidden=g.scores_hidden(), clock=clock_ctx(g),
+                      setup_parts=SETUP_PARTS, game_data_source=g.game_data_source(),
+                      game_data_imported=g.s.imported_game_data_path.exists(),
                       points=st.points)
 
     async def _do(request: Request, coro_or_result) -> RedirectResponse:
@@ -599,6 +603,46 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
+
+    # ---------------------------------------------------------------- Setup übertragen
+    @app.get("/export/setup.json")
+    async def export_setup(request: Request):
+        admin(request)
+        body = json.dumps(G(request).export_setup(), ensure_ascii=False, indent=2)
+        return Response(body, media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="kneipenmonopoly-setup-{_stamp()}.json"'})
+
+    @app.get("/export/spieldaten.json")
+    async def export_game_data(request: Request):
+        admin(request)
+        body = json.dumps(G(request).game_data_raw(), ensure_ascii=False, indent=2)
+        return Response(body, media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="spieldaten-{_stamp()}.json"'})
+
+    @app.post("/verwaltung/import")
+    async def import_setup(request: Request):
+        admin(request)
+        form = await request.form()
+        upload = form.get("datei")
+        if upload is None or not hasattr(upload, "read"):
+            flash(request, "Bitte eine Datei auswählen.", False)
+            return back("/verwaltung#import")
+        raw = await upload.read(MAX_IMPORT_BYTES + 1)
+        if len(raw) > MAX_IMPORT_BYTES:
+            flash(request, "Die Datei ist zu groß (max. 5 MB).", False)
+            return back("/verwaltung#import")
+        try:
+            payload = json.loads(raw.decode("utf-8-sig"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            flash(request, f"Keine gültige JSON-Datei: {e}", False)
+            return back("/verwaltung#import")
+        parts = {p for p in form.getlist("teil") if p in SETUP_PARTS}
+        return await _do(request, G(request).import_setup(payload, parts))
+
+    @app.post("/verwaltung/spieldaten/zuruecksetzen")
+    async def reset_game_data(request: Request):
+        admin(request)
+        return await _do(request, G(request).reset_game_data())
 
     @app.get("/healthz")
     async def health():

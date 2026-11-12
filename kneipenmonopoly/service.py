@@ -21,12 +21,21 @@ from typing import Callable, Protocol
 from . import rules as R
 from .config import Settings
 from .db import DB
-from .gamedata import GameData, distance_m
+from .gamedata import GameData, GameDataError, distance_m, parse_game_data
 from .texts import Raw, Texts
 
 log = logging.getLogger(__name__)
 
 PHASE_LABEL = {"setup": "Vorbereitung", "running": "läuft", "paused": "pausiert", "ended": "beendet"}
+SETUP_FORMAT = "kneipenmonopoly-setup"
+SETUP_PARTS = {
+    "spieldaten": "Kneipen, Bahnhöfe und Reserve-Bars (Karte)",
+    "teams": "Teams (Name, Farbe, Code; Telegram-Gruppen bleiben)",
+    "aktionskarten": "Aktionskarten",
+    "ereigniskarten": "Ereigniskarten",
+    "aufgaben": "Aufgaben pro Feld und Zufallsaufgaben",
+    "einstellungen": "Spieldauer und „Punktestand verdecken“",
+}
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -1459,6 +1468,172 @@ class Game:
             w.writerow([r["id"], local, r["actor"], r["type"], r["text"], "ja" if r["revoked"] else "",
                         bookings, json.dumps(r["data"], ensure_ascii=False)])
         return buf.getvalue()
+
+    # =========================================================================
+    # Setup exportieren / importieren (z.B. vom Laptop auf den Server)
+    # =========================================================================
+    def game_data_raw(self) -> dict:
+        """Aktive Spieldaten (Kneipen, Bahnhöfe, Reserve) im Format der Spieldaten-JSON."""
+        with self.s.active_game_data_path.open(encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def game_data_source(self) -> str:
+        p = self.s.imported_game_data_path
+        if p.exists():
+            when = datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
+            return f"importiert am {self.local(when).strftime('%d.%m.%Y %H:%M')}"
+        return f"aus {self.s.game_data_path.name} (Repository)"
+
+    def export_setup(self) -> dict:
+        """Alles, was man vor dem Spiel einrichtet. Ohne Spielstand, Chats, Fotos und Geheimnisse."""
+        return {
+            "format": SETUP_FORMAT,
+            "version": 1,
+            "exported_at": iso(self.clock()),
+            "teams": [{"name": t["name"], "color": t["color"], "code": t["code"]} for t in self.teams()],
+            "action_cards": [c["text"] for c in self.action_cards()],
+            "event_cards": [{"offset_min": c["offset_min"], "kind": c["kind"], "text": c["text"]}
+                            for c in self.event_cards()],
+            "tasks": self.tasks(),
+            "random_tasks": [r["text"] for r in self.random_tasks()],
+            "settings": {"duration_min": self.duration_min(), "scores_hidden": self.scores_hidden()},
+            "spieldaten": self.game_data_raw(),
+        }
+
+    def _reload_game_data(self, data: GameData) -> None:
+        self.data = data
+        self.board = data.board
+        self.invalidate()
+
+    def apply_game_data(self, raw: dict) -> ActionResult:
+        """Spieldaten prüfen, unter data/spieldaten.json speichern und sofort übernehmen."""
+        try:
+            data = parse_game_data(raw)
+        except (GameDataError, KeyError, TypeError, ValueError) as e:
+            return ActionResult(False, f"Spieldaten fehlerhaft: {e}")
+        target = self.s.imported_game_data_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(target)
+        self._reload_game_data(data)
+        # Aufgaben zu Feldern, die es nicht mehr gibt, entfernen
+        dropped = [s for s in self.tasks() if not data.is_spot(s)]
+        for s in dropped:
+            self.db.run("DELETE FROM tasks WHERE spot_id=?", (s,))
+        return ActionResult(True, f"{len(data.fields)} Kneipen, {len(data.stations)} Bahnhöfe, "
+                                  f"{len(data.reserve)} Reserve-Bars übernommen"
+                                  + (f", {len(dropped)} verwaiste Aufgabe(n) entfernt" if dropped else ""))
+
+    def reset_game_data(self) -> ActionResult:
+        """Importierte Spieldaten verwerfen, wieder die Datei aus dem Repository nutzen."""
+        if self.phase != "setup":
+            return ActionResult(False, "Nur in der Vorbereitung möglich (vor Spielstart oder nach dem Zurücksetzen).")
+        p = self.s.imported_game_data_path
+        if not p.exists():
+            return ActionResult(False, "Es sind keine importierten Spieldaten aktiv.")
+        from .gamedata import load_game_data
+        try:
+            data = load_game_data(self.s.game_data_path)
+        except GameDataError as e:
+            return ActionResult(False, f"Repository-Spieldaten fehlerhaft: {e}")
+        p.unlink()
+        self._reload_game_data(data)
+        return ActionResult(True, "Importierte Spieldaten verworfen, es gelten wieder die aus dem Repository.")
+
+    def import_setup(self, payload: dict, parts: set[str]) -> ActionResult:
+        """Importiert die gewählten Teile. Erlaubt nur in der Vorbereitung, damit kein Spielstand kaputtgeht.
+
+        `payload` ist ein Setup-Export oder eine reine Spieldaten-JSON (Kneipen auf der Karte).
+        Teile: spieldaten, teams, aktionskarten, ereigniskarten, aufgaben, einstellungen.
+        """
+        if self.phase != "setup":
+            return ActionResult(False, "Import nur in der Vorbereitung: vor dem Spielstart oder nach "
+                                       "„Spiel zurücksetzen“.")
+        if not isinstance(payload, dict):
+            return ActionResult(False, "Die Datei enthält kein gültiges Setup.")
+        if payload.get("format") != SETUP_FORMAT:
+            if "fields" in payload and "groups" in payload:      # reine Spieldaten-Datei
+                payload = {"spieldaten": payload}
+                parts = {"spieldaten"}
+            else:
+                return ActionResult(False, "Unbekanntes Dateiformat. Erwartet wird ein Setup-Export oder "
+                                           "eine Spieldaten-JSON.")
+        done: list[str] = []
+        if "spieldaten" in parts and payload.get("spieldaten"):
+            res = self.apply_game_data(payload["spieldaten"])
+            if not res.ok:
+                return res
+            done.append(res.message)
+        with self.db.tx() as conn:
+            if "teams" in parts and "teams" in payload:
+                added = updated = 0
+                notes = []
+                for t in payload["teams"]:
+                    name = str(t.get("name", "")).strip()
+                    if not name:
+                        continue
+                    color = t.get("color") or "#888888"
+                    code = str(t.get("code") or "").strip().upper()
+                    row = conn.execute("SELECT id FROM teams WHERE name=?", (name,)).fetchone()
+                    clash = conn.execute("SELECT id FROM teams WHERE code=? AND name<>?", (code, name)).fetchone() \
+                        if code else None
+                    if clash:
+                        notes.append(f"Code von {name} schon vergeben")
+                        code = ""
+                    if row:
+                        conn.execute("UPDATE teams SET color=?" + (", code=?" if code else "") + " WHERE id=?",
+                                     (color, code, row["id"]) if code else (color, row["id"]))
+                        updated += 1
+                    else:
+                        code = code or "".join(secrets.choice(CODE_ALPHABET) for _ in range(5))
+                        conn.execute("INSERT INTO teams(name,color,code,created_at) VALUES(?,?,?,?)",
+                                     (name, color, code, iso(self.clock())))
+                        added += 1
+                done.append(f"Teams: {added} neu, {updated} aktualisiert" + (f" ({'; '.join(notes)})" if notes else ""))
+            if "aktionskarten" in parts and "action_cards" in payload:
+                conn.execute("DELETE FROM action_cards")
+                for text in payload["action_cards"]:
+                    if str(text).strip():
+                        conn.execute("INSERT INTO action_cards(text) VALUES(?)", (str(text).strip(),))
+                done.append(f"{len(payload['action_cards'])} Aktionskarte(n)")
+            if "ereigniskarten" in parts and "event_cards" in payload:
+                conn.execute("DELETE FROM event_cards")
+                conn.execute("DELETE FROM kv WHERE key LIKE 'event_card_fired_%'")
+                n = 0
+                for c in payload["event_cards"]:
+                    if c.get("kind") in EVENT_CARD_KINDS and str(c.get("text", "")).strip():
+                        conn.execute("INSERT INTO event_cards(offset_min,kind,text) VALUES(?,?,?)",
+                                     (int(c.get("offset_min", 0)), c["kind"], str(c["text"]).strip()))
+                        n += 1
+                conn.execute("INSERT INTO kv(key,value) VALUES('event_cards_seeded','1') "
+                             "ON CONFLICT(key) DO UPDATE SET value='1'")
+                done.append(f"{n} Ereigniskarte(n)")
+            if "aufgaben" in parts and ("tasks" in payload or "random_tasks" in payload):
+                conn.execute("DELETE FROM tasks")
+                kept = skipped = 0
+                for spot, text in (payload.get("tasks") or {}).items():
+                    if self.data.is_spot(spot) and str(text).strip():
+                        conn.execute("INSERT INTO tasks(spot_id,text) VALUES(?,?)", (spot, str(text).strip()))
+                        kept += 1
+                    else:
+                        skipped += 1
+                conn.execute("DELETE FROM random_tasks")
+                for text in payload.get("random_tasks") or []:
+                    if str(text).strip():
+                        conn.execute("INSERT INTO random_tasks(text) VALUES(?)", (str(text).strip(),))
+                done.append(f"{kept} Feldaufgabe(n), {len(payload.get('random_tasks') or [])} Zufallsaufgabe(n)"
+                            + (f", {skipped} ohne passendes Feld übersprungen" if skipped else ""))
+        if "einstellungen" in parts and isinstance(payload.get("settings"), dict):
+            st = payload["settings"]
+            dur = st.get("duration_min")
+            self.db.set_kv("duration_min", str(int(dur)) if dur else "")
+            if "scores_hidden" in st:
+                self.set_scores_hidden(bool(st["scores_hidden"]))
+            done.append("Einstellungen (Spieldauer, Punktestand verdeckt)")
+        if not done:
+            return ActionResult(False, "Nichts importiert: keiner der gewählten Teile ist in der Datei enthalten.")
+        return ActionResult(True, "Import fertig: " + "; ".join(done) + ".")
 
     def purge_private_data(self) -> ActionResult:
         """Löscht Fotos, Chatverläufe und Standorte. Spielstand und Protokoll bleiben."""

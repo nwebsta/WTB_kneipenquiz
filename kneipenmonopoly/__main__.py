@@ -42,7 +42,7 @@ def main() -> int:
     if not s.bot_token:
         logging.warning("BOT_TOKEN fehlt: Es läuft nur die Webseite, ohne Telegram-Bot.")
     try:
-        load_game_data(s.game_data_path)
+        load_game_data(s.active_game_data_path)
     except GameDataError as e:
         problems.append(str(e))
     if not s.map_pdf_path.exists():

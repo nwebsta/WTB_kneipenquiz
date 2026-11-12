@@ -63,6 +63,17 @@ class Settings:
     def photo_dir(self) -> Path:
         return self.data_dir / "photos"
 
+    @property
+    def imported_game_data_path(self) -> Path:
+        """Über die Admin-Seite importierte Spieldaten (liegen bei den Daten, nicht im Git-Repository)."""
+        return self.data_dir / "spieldaten.json"
+
+    @property
+    def active_game_data_path(self) -> Path:
+        """Importierte Spieldaten haben Vorrang vor der Datei aus dem Repository."""
+        p = self.imported_game_data_path
+        return p if p.exists() else self.game_data_path
+
 
 def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None = None) -> Settings:
     """Liest Einstellungen. `env` überschreibt (für Tests)."""

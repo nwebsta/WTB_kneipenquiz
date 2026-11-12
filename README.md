@@ -210,6 +210,20 @@ sudo bash /opt/kneipenmonopoly/deploy/install.sh
 Das holt den Code per `git pull`, aktualisiert die Pakete, testet, sichert die Datenbank und startet neu.
 Spielstand, `.env` und `texte.toml` bleiben erhalten.
 
+**4. Einrichtung vom Laptop auf den Server übertragen:** Spielstand und Einrichtung liegen in `data/` und gehen
+nicht über Git. Dafür gibt es unter Verwaltung → **Export / Import**:
+
+1. Auf dem Laptop **Setup exportieren** klicken. Die heruntergeladene JSON-Datei enthält Teams, Aktionskarten,
+   Ereigniskarten, Aufgaben, Spieldauer und alle Kneipen, Bahnhöfe und Reserve-Bars.
+2. Auf dem Server dieselbe Datei unter **Importieren** hochladen und die gewünschten Teile anhaken.
+
+Importieren geht nur in der Vorbereitung, also vor dem Start oder nach „Spiel zurücksetzen“.
+Telegram-Verknüpfungen, Spielstand, Chats, Fotos und Passwörter werden nicht übertragen.
+Mit **Nur Kneipen/Bahnhöfe exportieren** bekommst du die Karte im Format der Spieldaten-Datei, etwa um einen Kiosk
+zu verschieben. Nach dem Bearbeiten lädst du sie genauso wieder hoch. Importierte Kneipen liegen in
+`data/spieldaten.json` und gelten vor der Datei aus dem Repository. **Import verwerfen** stellt den Repository-Stand
+wieder her. Die Karten-PDF ändert sich dabei nicht. Wer Kioske verschiebt, braucht eine neue PDF.
+
 | Option | Wirkung |
 |---|---|
 | `--configure` | Port, HTTP/HTTPS, Token und Passwort neu abfragen |
