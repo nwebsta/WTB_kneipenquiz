@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Karten-Editor{% endblock %}
+{% block mainclass %}full{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+{% block content %}
+<div class="editor">
+  <div id="ed-map"></div>
+  <aside class="ed-panel">
+    <div class="ed-toolbar">
+      <button class="btn primary" id="ed-save" disabled>💾 Speichern</button>
+      <button class="btn" id="ed-reset">Verwerfen</button>
+      <span id="ed-status" class="small muted">lädt …</span>
+    </div>
+    <div id="ed-msg"></div>
+    <div id="ed-mode" class="ed-mode" hidden></div>
+    <div id="ed-body"></div>
+  </aside>
+</div>
+<script src="/static/editor.js"></script>
+{% endblock %}

@@ -20,7 +20,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from ..config import Settings
 from ..db import DB
 from ..gamedata import load_game_data
-from ..service import EVENT_CARD_KINDS, PHASE_LABEL, SETUP_PARTS, Game, fmt_duration, parse_iso
+from ..service import (EVENT_CARD_KINDS, PHASE_LABEL, SETUP_PARTS, Game, fmt_duration, normalize_game_data,
+                       parse_iso)
 from ..simulation import SPEEDS, Simulator
 
 log = logging.getLogger(__name__)
@@ -603,6 +604,34 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
+
+    # ---------------------------------------------------------------- Karten-Editor
+    @app.get("/editor", response_class=HTMLResponse)
+    async def editor_page(request: Request):
+        admin(request)
+        return render(request, "editor.html")
+
+    @app.get("/editor/api/daten")
+    async def editor_data(request: Request):
+        admin(request)
+        g = G(request)
+        return JSONResponse({"data": normalize_game_data(g.game_data_raw()), "phase": g.phase,
+                             "struktur": g.phase == "setup", "quelle": g.game_data_source()})
+
+    @app.post("/editor/api/speichern")
+    async def editor_save(request: Request):
+        who = admin(request)
+        g = G(request)
+        try:
+            raw = await request.json()
+        except Exception:
+            return JSONResponse({"ok": False, "message": "Keine gültigen Daten empfangen."}, status_code=400)
+        res, notes = g.editor_save(raw, who)
+        body = {"ok": res.ok, "message": res.message, "notes": notes}
+        if res.ok:
+            body["data"] = normalize_game_data(g.game_data_raw())
+            body["quelle"] = g.game_data_source()
+        return JSONResponse(body, status_code=200 if res.ok else 422)
 
     # ---------------------------------------------------------------- Spielkarte (Bild)
     @app.get("/karte/bild.jpg")

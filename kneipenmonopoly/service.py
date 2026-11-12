@@ -23,7 +23,7 @@ from . import rules as R
 from .config import Settings
 from .db import DB
 from .gamedata import GameData, GameDataError, distance_m, parse_game_data
-from .mapimage import MapField, MapGroup, MapReserve, MapSpec, MapStation, render_map
+from .mapimage import MapField, MapGroup, MapSpec, MapStation, render_map
 from .texts import Raw, Texts
 
 log = logging.getLogger(__name__)
@@ -55,6 +55,109 @@ def iso(dt: datetime) -> str:
 
 def parse_iso(s: str) -> datetime:
     return datetime.fromisoformat(s)
+
+
+def slugify(text: str) -> str:
+    t = text.lower()
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"), ("é", "e"), ("è", "e"), ("&", "und")):
+        t = t.replace(a, b)
+    t = "".join(c if c.isalnum() else "-" for c in t)
+    while "--" in t:
+        t = t.replace("--", "-")
+    return t.strip("-") or "feld"
+
+
+def normalize_game_data(raw: dict) -> dict:
+    """Spieldaten aus dem Editor aufräumen und vereinheitlichen.
+
+    - fehlende IDs aus dem Namen erzeugen (eindeutig)
+    - `field_ids` jeder Straße aus der Reihenfolge der Felder ableiten
+    - Feldnummern 1..n in Straßen- und Feldreihenfolge neu vergeben
+    - Koordinaten prüfen
+    """
+    if not isinstance(raw, dict):
+        raise ValueError("kein Objekt")
+    out = {k: v for k, v in raw.items() if k not in ("groups", "fields", "stations", "reserve")}
+    used: set[str] = set()
+
+    def new_id(name: str, existing: str | None, pool: set[str]) -> str:
+        if existing and existing not in pool:
+            pool.add(existing)
+            return existing
+        base = slugify(name)
+        cand, n = base, 2
+        while cand in pool:
+            cand, n = f"{base}-{n}", n + 1
+        pool.add(cand)
+        return cand
+
+    def coord(item: dict, what: str) -> tuple[float, float]:
+        lat, lon = float(item["lat"]), float(item["lon"])
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            raise ValueError(f"Koordinaten von {what} ungültig")
+        return round(lat, 6), round(lon, 6)
+
+    group_ids: set[str] = set()
+    groups = []
+    for g in raw.get("groups", []):
+        name = str(g.get("name", "")).strip()
+        if not name:
+            raise ValueError("Straße ohne Namen")
+        gid = new_id(name, g.get("id"), group_ids)
+        color = str(g.get("color") or "#888888")
+        groups.append({"id": gid, "name": name, "color": color, "field_ids": []})
+    by_gid = {g["id"]: g for g in groups}
+    if not groups:
+        raise ValueError("Es braucht mindestens eine Straße")
+
+    fields = []
+    for f in raw.get("fields", []):
+        name = str(f.get("name", "")).strip()
+        if not name:
+            raise ValueError("Kneipe ohne Namen")
+        if f.get("group") not in by_gid:
+            raise ValueError(f"{name}: keine gültige Straße")
+        lat, lon = coord(f, name)
+        fid = new_id(name, f.get("id"), used)
+        fields.append({"id": fid, "no": 0, "name": name, "type": "kneipe" if f.get("type") == "kneipe" else "bar",
+                       "group": f["group"], "address": str(f.get("address", "")).strip(), "lat": lat, "lon": lon})
+    no = 1
+    for g in groups:                         # Nummern in Straßen- und Feldreihenfolge
+        for f in fields:
+            if f["group"] == g["id"]:
+                g["field_ids"].append(f["id"])
+                f["no"] = no
+                no += 1
+    fields.sort(key=lambda f: f["no"])
+
+    stations = []
+    for s in raw.get("stations", []):
+        name = str(s.get("name", "")).strip()
+        if not name:
+            raise ValueError("Bahnhof ohne Namen")
+        lat, lon = coord(s, name)
+        stations.append({"id": new_id(name, s.get("id"), used), "name": name,
+                         "venue": str(s.get("venue", "")).strip(), "lat": lat, "lon": lon,
+                         "verified_open": bool(s.get("verified_open", True))})
+    reserve = []
+    for r in raw.get("reserve", []):
+        name = str(r.get("name", "")).strip()
+        if not name:
+            raise ValueError("Reserve-Bar ohne Namen")
+        lat, lon = coord(r, name)
+        reserve.append({"id": new_id(name, r.get("id"), used), "name": name,
+                        "address": str(r.get("address", "")).strip(), "lat": lat, "lon": lon})
+    out.update(groups=groups, fields=fields, stations=stations, reserve=reserve)
+    return out
+
+
+def structure_of(raw: dict) -> tuple:
+    """Was sich im laufenden Spiel nicht ändern darf: welche Felder/Bahnhöfe/Reserve es gibt und welche Straße wozu gehört."""
+    return (
+        tuple((g["id"], tuple(g["field_ids"])) for g in raw["groups"]),
+        tuple(s["id"] for s in raw["stations"]),
+        tuple(r["id"] for r in raw["reserve"]),
+    )
 
 
 def fmt_duration(minutes: int) -> str:
@@ -1489,11 +1592,9 @@ class Game:
         for sid in self.data.stations:
             sp = self.spot(sid, st)
             stations.append(MapStation(letters.get(sid, "?"), sp.name, sp.address, sp.lat, sp.lon, sp.active))
-        used = set(st.replaced.values())
-        free_reserve = [r for r in self.data.reserve.values() if r.id not in used]
-        reserve = [MapReserve(chr(ord("a") + i) if i < 26 else str(i), r.name, r.address, r.lat, r.lon)
-                   for i, r in enumerate(free_reserve)]
-        return MapSpec(self.data.game, groups, stations, reserve, list(self.data.boundary))
+        # Reserve-Bars nur, wenn sie ein Feld ersetzen – dann stecken sie schon in `groups`.
+        # Nicht aktive Reserve erscheint nicht auf der Karte.
+        return MapSpec(self.data.game, groups, stations, [], list(self.data.boundary))
 
     def map_signature(self, spec: MapSpec | None = None) -> str:
         import hashlib
@@ -1585,6 +1686,52 @@ class Game:
         return ActionResult(True, f"{len(data.fields)} Kneipen, {len(data.stations)} Bahnhöfe, "
                                   f"{len(data.reserve)} Reserve-Bars übernommen"
                                   + (f", {len(dropped)} verwaiste Aufgabe(n) entfernt" if dropped else ""))
+
+    # --- Karten-Editor ---------------------------------------------------------
+    def editor_save(self, raw: dict, admin: str) -> tuple[ActionResult, list[str]]:
+        """Speichert die Spieldaten aus dem Karten-Editor. Rückgabe: (Ergebnis, Hinweise).
+
+        Vor dem Spielstart ist alles erlaubt. Während des Spiels nur Namen, Adressen,
+        Koordinaten, Typ und Farben, damit Besitz und Punkte stimmig bleiben.
+        """
+        try:
+            raw = normalize_game_data(raw)
+        except (ValueError, TypeError, KeyError) as e:
+            return ActionResult(False, f"Ungültige Daten: {e}"), []
+        if self.phase != "setup":
+            current = normalize_game_data(self.game_data_raw())
+            if structure_of(raw) != structure_of(current):
+                return ActionResult(False, "Während des Spiels lassen sich nur Namen, Adressen, Koordinaten, Typ "
+                                           "und Farben ändern. Hinzufügen, Löschen und Straßen umsortieren geht "
+                                           "nur in der Vorbereitung."), []
+        notes = []
+        letters: dict[str, str] = {}
+        for s in raw.get("stations", []):
+            letter = s["name"][:1].upper()
+            if letter in letters:
+                notes.append(f"Bahnhöfe „{letters[letter]}“ und „{s['name']}“ beginnen beide mit {letter}. "
+                             f"Im Testmodus (/checkin {letter}) ist nur der erste erreichbar.")
+            letters.setdefault(letter, s["name"])
+        empty = [g["name"] for g in raw["groups"] if not g["field_ids"]]
+        if empty:
+            notes.append("Straße ohne Kneipen: " + ", ".join(empty))
+        self._backup_game_data()
+        res = self.apply_game_data(raw)
+        if res.ok:
+            log.info("Karten-Editor: Spieldaten gespeichert von %s", admin)
+            res = ActionResult(True, "Gespeichert: " + res.message)
+        return res, notes
+
+    def _backup_game_data(self) -> None:
+        src = self.s.imported_game_data_path
+        if not src.exists():
+            return
+        bdir = self.s.data_dir / "spieldaten-backups"
+        bdir.mkdir(parents=True, exist_ok=True)
+        stamp = self.clock().astimezone(self.s.tz).strftime("%Y%m%d-%H%M%S")
+        shutil.copyfile(src, bdir / f"spieldaten-{stamp}.json")
+        for old in sorted(bdir.glob("spieldaten-*.json"))[:-20]:   # die letzten 20 behalten
+            old.unlink(missing_ok=True)
 
     def reset_game_data(self) -> ActionResult:
         """Importierte Spieldaten verwerfen, wieder die Datei aus dem Repository nutzen."""

@@ -346,6 +346,26 @@ Das Dashboard zeigt, was gerade passiert. Karte, Prüfen und Chats zeigen alles 
 - **Bot-Nachrichten wirklich senden:** Ohne diesen Haken bleiben die Telegram-Gruppen ruhig. Die Antworten des Bots stehen dann nur in den Chats der Admin-Seite.
 - Die Simulation schreibt in den echten Spielstand. Danach **Spiel zurücksetzen**, das stoppt sie auch.
 
+### Karten-Editor
+
+Im Reiter **Karten-Editor** bearbeitest du die Spieldaten direkt im Browser. Links ist die Karte, rechts die Liste:
+
+- **Allgemein:** Titel und Stadt der Karte.
+- **Straßen:** Name und Farbe ändern, mit ▲▼ die Reihenfolge festlegen, neue Straßen anlegen, leere Straßen löschen.
+- **Kneipen:** Name, Adresse, Typ (Kneipe oder Bar) und Straße ändern, Reihenfolge mit ▲▼. **+ Kneipe** bei einer
+  Straße, dann auf die Karte klicken, um die neue Kneipe zu setzen. Löschen mit ✕.
+- **Bahnhöfe** und **Reserve-Bars:** genauso, inklusive „geöffnet bestätigt“ bei Bahnhöfen.
+- **Position ändern:** Punkt auf der Karte an die richtige Stelle ziehen. 📍 in der Liste zeigt den Punkt auf der Karte.
+
+Erst **Speichern** übernimmt die Änderungen. Der Server prüft die Daten und vergibt die Feldnummern neu, Straße für
+Straße. Die Spielkarte für die Teams wird automatisch neu gezeichnet. Vor jedem Speichern landet eine Sicherung in
+`data/spieldaten-backups/`, die letzten 20 bleiben. Gespeichert wird wie beim Import in `data/spieldaten.json`.
+**Import verwerfen** in der Verwaltung stellt den Stand aus dem Repository wieder her.
+
+Während das Spiel läuft, lassen sich nur Namen, Adressen, Typ, Farben und Positionen ändern, zum Beispiel wenn ein
+Check-in an einer Bar scheitert, weil der Punkt falsch sitzt. Hinzufügen, Löschen und Straßen neu zuordnen geht nur
+in der Vorbereitung, sonst passen Besitz und Punkte nicht mehr.
+
 ### Spielkarte
 
 Die Teams bekommen die Karte beim Spielstart und mit `/karte` als **Bild**. Der Server zeichnet es selbst aus
