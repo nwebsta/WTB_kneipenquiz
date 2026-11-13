@@ -598,20 +598,41 @@ def test_action_card_only_in_a_bar(g):
     a = tid(g, "Alpha")
     g.add_action_card("Tanzen")
     g.add_action_card("Singen")
-    assert "nur in einer Kneipe" in run(g.request_action(a)).message      # nicht eingecheckt
+    assert "direkt nach dem Check-in" in run(g.request_action(a)).message  # nicht eingecheckt
     g.checkin(a, "bahnhof-ost", *OST)
     assert g.action_buttons(a) == []                                      # Bahnhof zählt nicht
     assert not run(g.request_action(a)).ok
     r = g.checkin(a, "die-eule", *EULE)
     assert ("🎬 Aktionskarte ziehen", "aktion") in r.buttons
-    g.clock_obj.advance(minutes=30)                                       # Foto noch offen: weiter erlaubt
+    g.clock_obj.advance(minutes=10)                                       # noch kein Foto: erlaubt
     assert g.action_buttons(a)
-    g.clock_obj.advance(minutes=16)                                       # > 45 Min nach Check-in
+    g.submit_photo(a, None, "f", "foto")                                  # Foto eingereicht: vorbei
     assert g.action_buttons(a) == []
-    assert not run(g.request_action(a)).ok
+    assert "bevor ihr das Foto schickt" in run(g.request_action(a)).message
     g.checkin(a, "sailors-pub", *SAILOR)                                  # neuer Kneipen-Check-in
+    g.clock_obj.advance(minutes=21)                                       # Check-in-Frist abgelaufen
+    assert g.action_buttons(a) == [] and not run(g.request_action(a)).ok
+    g.checkin(a, "sailors-pub", *SAILOR)
     assert run(g.request_action(a)).ok
-    assert "bei /stand" not in g.rules_text() and "Nur in einer Kneipe" in g.rules_text()
+    assert "bei /stand" not in g.rules_text() and "Nicht im Wettrennen" in g.rules_text()
+
+
+def test_no_action_card_in_race(g):
+    run(g.start_game("anna"))
+    a, b = tid(g, "Alpha"), tid(g, "Beta")
+    g.add_action_card("Tanzen")
+    r_a = g.checkin(a, "die-eule", *EULE)
+    assert ("🎬 Aktionskarte ziehen", "aktion") in r_a.buttons            # allein in der freien Bar
+    r_b = g.checkin(b, "die-eule", *EULE)                                 # Beta kommt dazu: Wettrennen
+    assert all(d != "aktion" for _, d in r_b.buttons)
+    assert g.action_buttons(a) == [] and g.action_buttons(b) == []        # auch der alte Button von Alpha
+    assert "Wettrennen" in run(g.request_action(a)).message
+    assert "Wettrennen" in run(g.request_action(b)).message
+    # Bar gehört schon jemandem: kein Wettrennen, Aktion erlaubt
+    visit(g, b, SAILOR)
+    g.clock_obj.advance(minutes=1)
+    g.checkin(a, "sailors-pub", *SAILOR)
+    assert run(g.request_action(a)).ok
 
 
 def test_hidden_scores_hide_owners(g):

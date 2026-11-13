@@ -883,25 +883,24 @@ class Game:
         return self.db.one("SELECT * FROM checkins WHERE team_id=? ORDER BY id DESC LIMIT 1", (team_id,))
 
     def bar_checkin(self, team_id: int):
-        """Aktueller Check-in in einer Kneipe (nicht Bahnhof), sonst None.
-
-        Zählt, solange der Check-in offen ist oder das Foto eingereicht/freigegeben wurde,
-        höchstens ACTION_WINDOW_MIN Minuten lang.
-        """
-        ci = self.last_checkin(team_id)
+        """Offener Check-in in einer Kneipe (nicht Bahnhof), also zwischen Check-in und Foto. Sonst None."""
+        ci = self.open_checkin(team_id)
         if ci is None or ci["spot_id"] not in self.data.fields:
             return None
-        if ci["status"] not in ("open", "submitted", "done"):
-            return None
-        if self.clock() - parse_iso(ci["created_at"]) > timedelta(minutes=self.s.action_window_min):
-            return None
+        if parse_iso(ci["expires_at"]) < self.clock() and self.phase == "running":
+            return None                      # Frist abgelaufen, der Sweeper räumt gleich auf
         return ci
 
+    def in_race(self, team_id: int, spot_id: str) -> bool:
+        """Wettrennen: freie Bar, in der gerade auch ein anderes Team eingecheckt ist."""
+        return spot_id not in self.state().owners and bool(self.rivals_at(spot_id, team_id))
+
     def action_buttons(self, team_id: int) -> list[tuple[str, str]]:
-        """Button „Aktionskarte ziehen“: nur in einer Kneipe, im laufenden Spiel und mit übrigen Karten."""
+        """Button „Aktionskarte ziehen“: nur zwischen Kneipen-Check-in und Foto, nicht im Wettrennen."""
         if self.phase != "running" or self.open_call(team_id) or not self.remaining_action_cards(team_id):
             return []
-        if self.bar_checkin(team_id) is None:
+        ci = self.bar_checkin(team_id)
+        if ci is None or self.in_race(team_id, ci["spot_id"]):
             return []
         return [(self.t("allgemein.button_aktion"), "aktion")]
 
@@ -924,6 +923,8 @@ class Game:
         last = self.bar_checkin(team_id)
         if last is None:
             return ActionResult(False, self.t("aktion.nicht_in_kneipe"))
+        if self.in_race(team_id, last["spot_id"]):
+            return ActionResult(False, self.t("aktion.wettrennen"))
         card = random.choice(cards)
         self.db.run("INSERT INTO calls(kind,team_id,spot_id,checkin_id,card_id,card_text,requested_at,status) "
                     "VALUES('action',?,?,?,?,?,?,'open')",

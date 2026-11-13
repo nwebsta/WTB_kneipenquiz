@@ -44,7 +44,6 @@ class Settings:
     checkin_radius_m: int = 50
     checkin_timeout_min: int = 20
     cooldown_min: int = 30
-    action_window_min: int = 45            # so lange nach dem Kneipen-Check-in darf man eine Aktionskarte ziehen
     game_duration_min: int | None = None   # Standard-Spieldauer, in der Verwaltung änderbar
     map_tiles: bool = True                 # Kartenbild mit OpenStreetMap-Hintergrund (braucht Internet)
     random_tasks_enabled: bool = True
@@ -122,7 +121,6 @@ def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None 
         checkin_radius_m=_int(env, "CHECKIN_RADIUS_M", 50),
         checkin_timeout_min=_int(env, "CHECKIN_TIMEOUT_MIN", 20),
         cooldown_min=_int(env, "COOLDOWN_MIN", 30),
-        action_window_min=_int(env, "ACTION_WINDOW_MIN", 45),
         game_duration_min=_int(env, "GAME_DURATION_MIN", 0) or None,
         map_tiles=_bool(env.get("MAP_TILES"), True),
         random_tasks_enabled=_bool(env.get("RANDOM_TASKS_ENABLED"), True),

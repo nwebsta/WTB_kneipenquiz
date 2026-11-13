@@ -49,8 +49,8 @@ Weitere Regeln:
   - Pro Team zeigt der Bot höchstens eine Karte pro Check-in. Verfällt der Check-in ohne Foto, kommt die Karte beim nächsten wieder.
     Bahnhöfe zählen dafür nicht. In der Prüf-Warteschlange steht die Karte beim Foto.
 - **Aktionskarten:** Jede Karte kann ein Team höchstens einmal ziehen. Es gibt so viele, wie in der Verwaltung angelegt sind.
-  Ziehen geht nur in einer Kneipe, nicht an Bahnhöfen: Der Button kommt mit der Check-in-Bestätigung und gilt bis
-  45 Minuten nach dem Check-in (`ACTION_WINDOW_MIN`).
+  Ziehen geht nur in einer Kneipe, nicht an Bahnhöfen, und nur zwischen Check-in und Foto: Der Button kommt mit der
+  Check-in-Bestätigung und gilt, bis das Foto eingereicht ist oder der Check-in abläuft. Im Wettrennen gibt es keine Aktionskarte.
 - **Abklingzeit:** Dieselbe Bar bzw. derselbe Bahnhof zählt für ein Team erst nach 30 Minuten wieder.
 - **Check-in-Frist:** 20 Minuten bis zum Foto, sonst verfällt der Check-in.
 - **Abgelehntes Foto:** Das Team darf ohne neuen Check-in ein neues schicken. Die Frist beginnt neu.

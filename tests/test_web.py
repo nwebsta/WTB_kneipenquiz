@@ -126,7 +126,8 @@ def test_full_admin_flow(ctx):
     client.post("/verwaltung/aktionskarte/neu", data={"text": "Singt ein Lied"})
     assert "Singt ein Lied" in client.get("/verwaltung").text
     import asyncio
-    asyncio.run(game.request_action(a))
+    assert game.checkin(a, "die-eule", *EULE).ok             # Aktion nur direkt nach einem Kneipen-Check-in
+    assert asyncio.run(game.request_action(a)).ok
     page = client.get("/pruefen").text
     assert "Videoanruf" in page and "Singt ein Lied" in page and "Die Eule" in page
     call = game.open_calls()[0]
