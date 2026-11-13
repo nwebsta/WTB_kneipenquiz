@@ -49,6 +49,8 @@ Weitere Regeln:
   - Pro Team zeigt der Bot höchstens eine Karte pro Check-in. Verfällt der Check-in ohne Foto, kommt die Karte beim nächsten wieder.
     Bahnhöfe zählen dafür nicht. In der Prüf-Warteschlange steht die Karte beim Foto.
 - **Aktionskarten:** Jede Karte kann ein Team höchstens einmal ziehen. Es gibt so viele, wie in der Verwaltung angelegt sind.
+  Ziehen geht nur in einer Kneipe, nicht an Bahnhöfen: Der Button kommt mit der Check-in-Bestätigung und gilt bis
+  45 Minuten nach dem Check-in (`ACTION_WINDOW_MIN`).
 - **Abklingzeit:** Dieselbe Bar bzw. derselbe Bahnhof zählt für ein Team erst nach 30 Minuten wieder.
 - **Check-in-Frist:** 20 Minuten bis zum Foto, sonst verfällt der Check-in.
 - **Abgelehntes Foto:** Das Team darf ohne neuen Check-in ein neues schicken. Die Frist beginnt neu.
@@ -58,6 +60,10 @@ Weitere Regeln:
 - **Spielzeit:** Eine Spieldauer, z.B. 3:00, startet mit dem Spiel. Eine Pause hält die Spieluhr an und verlängert das Spiel. Warnungen kommen 30 und 10 Minuten vor Ende. Ereigniskarten richten sich ebenfalls nach der Spielzeit.
   Danach eingereichte Fotos zählen nicht. Schon eingereichte werden noch geprüft, danach kommt der Endstand.
 - **Sieger:** das Team mit den meisten Punkten. Bei Gleichstand teilen sich die Teams den Platz.
+- **Punktestand verdeckt** (Standard, `SCORES_HIDDEN=true`, in der Verwaltung umschaltbar): Teams sehen nur ihre eigenen
+  Punkte. Wem welche Bar gehört, bleibt bis Spielende geheim. `/felder` zeigt dann nur die Liste ohne Besitzer, das besuchende
+  Team erfährt nicht, wem die Bar gehört, und „Straße komplett“ geht nicht an alle. Der Besitzer bekommt weiterhin die
+  Meldung, wenn jemand bei ihm war.
 - **Reserve-Bars** sind nur Ersatz. Ein Ersatzfeld übernimmt Nummer, Straße und Besitzer.
 - **Geschlossene Bar ohne Besitzer** zählt für „Straße komplett“ nicht mehr mit.
 

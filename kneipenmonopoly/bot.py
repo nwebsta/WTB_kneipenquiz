@@ -181,7 +181,7 @@ def build_application(game: Game) -> Application:
     async def cmd_stand(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         team = await team_or_hint(update)
         if team:
-            await reply(update, game.stand_text(team["id"]), keyboard(game.action_buttons(team["id"])))
+            await reply(update, game.stand_text(team["id"]))
 
     async def cmd_felder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if await team_or_hint(update):

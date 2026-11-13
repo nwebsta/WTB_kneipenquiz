@@ -467,7 +467,8 @@ def test_action_button_on_checkin_and_rules(g):
     a = tid(g, "Alpha")
     g.add_action_card("Tanzen")
     run(g.start_game("anna"))
-    assert any(c == 100 and b == [("🎬 Aktionskarte ziehen", "aktion")] for c, b in g.notifier.buttons)
+    assert g.notifier.buttons == []                        # kein Button in Regeln/Start: nicht in einer Kneipe
+    assert g.action_buttons(a) == []
     r = g.checkin(a, "die-eule", *EULE)
     assert ("🎬 Aktionskarte ziehen", "aktion") in r.buttons
     run(g.request_action(a))
@@ -592,11 +593,69 @@ def test_double_points_card_fires_and_counts_by_upload_time(g):
     assert sum("doppelt" in t for _, t in g.notifier.sent) == 2   # je Team einmal, nicht erneut
 
 
+def test_action_card_only_in_a_bar(g):
+    run(g.start_game("anna"))
+    a = tid(g, "Alpha")
+    g.add_action_card("Tanzen")
+    g.add_action_card("Singen")
+    assert "nur in einer Kneipe" in run(g.request_action(a)).message      # nicht eingecheckt
+    g.checkin(a, "bahnhof-ost", *OST)
+    assert g.action_buttons(a) == []                                      # Bahnhof zählt nicht
+    assert not run(g.request_action(a)).ok
+    r = g.checkin(a, "die-eule", *EULE)
+    assert ("🎬 Aktionskarte ziehen", "aktion") in r.buttons
+    g.clock_obj.advance(minutes=30)                                       # Foto noch offen: weiter erlaubt
+    assert g.action_buttons(a)
+    g.clock_obj.advance(minutes=16)                                       # > 45 Min nach Check-in
+    assert g.action_buttons(a) == []
+    assert not run(g.request_action(a)).ok
+    g.checkin(a, "sailors-pub", *SAILOR)                                  # neuer Kneipen-Check-in
+    assert run(g.request_action(a)).ok
+    assert "bei /stand" not in g.rules_text() and "Nur in einer Kneipe" in g.rules_text()
+
+
+def test_hidden_scores_hide_owners(g):
+    run(g.start_game("anna"))
+    a, b = tid(g, "Alpha"), tid(g, "Beta")
+    assert g.scores_hidden()                                              # Standard: verdeckt
+    visit(g, a, EULE)
+    felder = g.felder_text()
+    assert "Alpha" not in felder and "geheim" in felder and "Die Eule" in felder and "frei" not in felder
+    stand = g.stand_text(a)
+    assert "Eure Punkte: <b>1</b>" in stand and "Beta" not in stand
+    g.notifier.sent.clear()
+    visit(g, b, EULE)
+    to_beta = [t for c, t in g.notifier.sent if c == 200]
+    to_alpha = [t for c, t in g.notifier.sent if c == 100]
+    assert any("einem anderen Team" in t for t in to_beta) and not any("Alpha" in t for t in to_beta)
+    assert any("Beta" in t and "war bei euch" in t for t in to_alpha)     # Besitzer erfährt den Besuch
+    run(g.end_game("anna"))
+    assert "Alpha" in g.felder_text()                                     # nach Spielende sichtbar
+
+
+def test_hidden_scores_no_street_broadcast(g):
+    run(g.start_game("anna"))
+    a = tid(g, "Alpha")
+    visit(g, a, (51.430134, 7.004468))      # Früher oder Später (Braun)
+    g.notifier.sent.clear()
+    visit(g, a, (51.429656, 7.003469))      # Mimaya -> Braun komplett
+    assert any(c == 100 and "komplett" in t for c, t in g.notifier.sent)
+    assert not any(c == 200 for c, _ in g.notifier.sent)                  # Beta erfährt nichts
+
+
+def test_open_scores_still_show_owners(g):
+    g.set_scores_hidden(False)
+    run(g.start_game("anna"))
+    visit(g, tid(g, "Alpha"), EULE)
+    assert "Alpha" in g.felder_text()
+
+
 def test_final_waits_for_open_calls(g):
     run(g.start_game("anna"))
     a = tid(g, "Alpha")
     g.add_action_card("Tanzen")
-    run(g.request_action(a))
+    g.checkin(a, "die-eule", *EULE)
+    assert run(g.request_action(a)).ok
     run(g.end_game("anna"))
     assert not any("🏆 <b>Endstand" in t for _, t in g.notifier.sent)
     run(g.decide_call(g.open_calls()[0]["id"], "anna", True))
@@ -606,7 +665,9 @@ def test_final_waits_for_open_calls(g):
 def test_reset_clears_calls_and_cards_fire_again(g):
     run(g.start_game("anna"))
     g.add_action_card("Tanzen")
-    run(g.request_action(tid(g, "Alpha")))
+    g.checkin(tid(g, "Alpha"), "die-eule", *EULE)
+    assert run(g.request_action(tid(g, "Alpha"))).ok
+    assert g.open_calls_count() == 1
     g.clock_obj.advance(minutes=151)
     run(g.sweep())
     g.reset_game()

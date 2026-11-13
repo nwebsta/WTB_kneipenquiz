@@ -488,7 +488,7 @@ class Game:
 
     async def send_welcome_pack(self, team_id: int) -> None:
         await self.send_map_to(team_id)
-        await self.send_team(team_id, self.rules_text(), self.action_buttons(team_id))
+        await self.send_team(team_id, self.rules_text())
 
     async def admin_message(self, admin: str, text: str, team_id: int | None = None) -> None:
         msg = self.t("allgemein.spielleitung", text=text)
@@ -882,9 +882,26 @@ class Game:
     def last_checkin(self, team_id: int):
         return self.db.one("SELECT * FROM checkins WHERE team_id=? ORDER BY id DESC LIMIT 1", (team_id,))
 
+    def bar_checkin(self, team_id: int):
+        """Aktueller Check-in in einer Kneipe (nicht Bahnhof), sonst None.
+
+        Zählt, solange der Check-in offen ist oder das Foto eingereicht/freigegeben wurde,
+        höchstens ACTION_WINDOW_MIN Minuten lang.
+        """
+        ci = self.last_checkin(team_id)
+        if ci is None or ci["spot_id"] not in self.data.fields:
+            return None
+        if ci["status"] not in ("open", "submitted", "done"):
+            return None
+        if self.clock() - parse_iso(ci["created_at"]) > timedelta(minutes=self.s.action_window_min):
+            return None
+        return ci
+
     def action_buttons(self, team_id: int) -> list[tuple[str, str]]:
-        """Button „Aktionskarte ziehen“, solange das Spiel läuft und das Team noch Karten hat."""
+        """Button „Aktionskarte ziehen“: nur in einer Kneipe, im laufenden Spiel und mit übrigen Karten."""
         if self.phase != "running" or self.open_call(team_id) or not self.remaining_action_cards(team_id):
+            return []
+        if self.bar_checkin(team_id) is None:
             return []
         return [(self.t("allgemein.button_aktion"), "aktion")]
 
@@ -904,8 +921,10 @@ class Game:
         cards = self.remaining_action_cards(team_id)
         if not cards:
             return ActionResult(False, self.t("aktion.alle_gespielt"))
+        last = self.bar_checkin(team_id)
+        if last is None:
+            return ActionResult(False, self.t("aktion.nicht_in_kneipe"))
         card = random.choice(cards)
-        last = self.last_checkin(team_id)
         self.db.run("INSERT INTO calls(kind,team_id,spot_id,checkin_id,card_id,card_text,requested_at,status) "
                     "VALUES('action',?,?,?,?,?,?,'open')",
                     (team_id, last["spot_id"] if last else None, last["id"] if last else None, card["id"],
@@ -1165,7 +1184,10 @@ class Game:
                 elif e.kind == R.STREET_LOST:
                     lines.append(T("foto.strasse_verloren", strasse=gname, punkte=e.delta))
             elif e.kind in (R.RENT, R.STATION_RENT):
-                lines.append(T("foto.besitzer_kassiert", team=names.get(e.team, "?"), punkte=e.delta))
+                if self.hide_owners():
+                    lines.append(T("foto.besitzer_kassiert_geheim", punkte=e.delta))
+                else:
+                    lines.append(T("foto.besitzer_kassiert", team=names.get(e.team, "?"), punkte=e.delta))
                 full = (e.kind == R.RENT and e.group is not None and cfg.points_owner_street != cfg.points_owner
                         and R.street_owner(st, self.board, e.group) == e.team)
                 owner_msgs.setdefault(e.team, []).append(
@@ -1177,7 +1199,7 @@ class Game:
         await self.send_team(team, "\n".join(lines))
         for owner, msgs in owner_msgs.items():
             await self.send_team(owner, "\n".join(msgs + [T("allgemein.punktestand", punkte=st.points_of(owner))]))
-        if self.s.announce_street_complete:
+        if self.s.announce_street_complete and not self.hide_owners():
             for t, gname in street_done:
                 await self.send_all(T("foto.strasse_info_alle", team=names.get(t, "?"), strasse=gname), exclude={t})
 
@@ -1424,30 +1446,41 @@ class Game:
                             uhrzeit=self.hm(self.end_time()))]
         return "\n".join(lines)
 
+    def hide_owners(self) -> bool:
+        """Bei verdecktem Punktestand bleibt bis Spielende auch geheim, wem was gehört."""
+        return self.scores_hidden() and self.phase != "ended"
+
     def felder_text(self) -> str:
         T = self.t
         st = self.state()
         names = self.team_names()
+        hidden = self.hide_owners()
 
         def status(spot_id: str, active: bool) -> Raw:
+            if hidden:
+                return Raw(T("felder.geschlossen") if not active else "")
             owner = st.owners.get(spot_id)
             s = T("felder.besitzer", team=names.get(owner, "?")) if owner else T("felder.frei")
             return Raw(s + (T("felder.geschlossen") if not active else ""))
 
+        zeile = "felder.zeile_geheim" if hidden else "felder.zeile"
+        bahnhof_zeile = "felder.bahnhof_zeile_geheim" if hidden else "felder.bahnhof_zeile"
         lines = [T("felder.kopf")]
+        if hidden:
+            lines.append(T("felder.geheim"))
         for g in self.data.groups.values():
-            holder = st.street_holder.get(g.id)
+            holder = None if hidden else st.street_holder.get(g.id)
             lines.append("")
             lines.append(T("felder.strasse_komplett", strasse=g.name, team=names.get(holder, "?")) if holder
                          else T("felder.strasse", strasse=g.name))
             for fid in g.field_ids:
                 sp = self.spot(fid, st)
-                lines.append(T("felder.zeile", nummer=sp.no, bar=sp.name, status=status(fid, sp.active)))
+                lines.append(T(zeile, nummer=sp.no, bar=sp.name, status=status(fid, sp.active)))
         lines += ["", T("felder.bahnhoefe")]
         letter_of = {sid: letter for letter, sid in self.station_letters().items()}
         for sid in self.data.stations:
             sp = self.spot(sid, st)
-            lines.append(T("felder.bahnhof_zeile", kuerzel=letter_of.get(sid, "?"), bahnhof=sp.name,
+            lines.append(T(bahnhof_zeile, kuerzel=letter_of.get(sid, "?"), bahnhof=sp.name,
                            status=status(sid, sp.active)))
         if self.test_mode():
             lines += ["", T("testmodus.felder")]

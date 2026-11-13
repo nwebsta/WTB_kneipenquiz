@@ -189,6 +189,8 @@ strasse_komplett = "🎉 Straße <b>{strasse}</b> komplett! Bonus +{punkte}"
 strasse_verloren = "Straße {strasse} nicht mehr komplett: {punkte}"
 # {team} = Besitzer, {punkte}
 besitzer_kassiert = "💸 Gehört Team <b>{team}</b>, die kassieren +{punkte}."
+# Wie oben, wenn der Punktestand verdeckt ist (Besitzer wird nicht genannt). {punkte}
+besitzer_kassiert_geheim = "💸 Die Bar gehört schon einem anderen Team, das kassiert +{punkte}."
 schon_eure_bar = "Die Bar gehört euch ja schon."
 
 # An den Besitzer, wenn ein anderes Team bei ihm war. {team} = Besucher, {bar}, {punkte}
@@ -210,6 +212,7 @@ kein_grund = "kein Grund angegeben"
 schon_offen = "📞 Ihr habt schon eine offene Anfrage. Wartet bitte auf den Videoanruf!"
 keine_karten = "🎬 Aktionskarten gibt's gerade noch nicht. Fragt die Spielleitung!"
 alle_gespielt = "🎬 Ihr habt schon alle Aktionskarten gespielt. Respekt!"
+nicht_in_kneipe = "🎬 Aktionskarten gibt's nur in einer Kneipe. Checkt erst per Standort ein, dann kommt der Button."
 # {karte}, {plus}, {minus}, {wo} = Text aus aktion.wo_zuletzt (oder leer), {rest} = übrige Karten
 gezogen = '''
 🎬 <b>Aktionskarte:</b> {karte}
@@ -270,7 +273,7 @@ text = '''
 🎉 Straße komplett: einmalig +{strassenbonus}
 🚉 Bahnhöfe: Punkte nach Anzahl Bahnhöfe des Besitzers ({bahnhof_punkte})
 🎯 Aufgaben bringen +{aufgabe}
-🎬 <b>Aktionskarten:</b> Button „Aktionskarte ziehen“ drücken (kommt beim Check-in und bei /stand). Die Spielleitung ruft euch per Video an. Geschafft +{aktion_plus}, nicht geschafft {aktion_minus}.
+🎬 <b>Aktionskarten:</b> Nur in einer Kneipe: Nach dem Check-in kommt der Button „Aktionskarte ziehen“. Die Spielleitung ruft euch per Video an. Geschafft +{aktion_plus}, nicht geschafft {aktion_minus}.
 🃏 <b>Ereigniskarten</b> tauchen im Lauf des Abends auf. Lasst euch überraschen!
 🕐 Dieselbe fremde Bar erst wieder nach {abklingzeit} Min.
 🏠 In der eigenen Bar gibt's nichts.
@@ -352,3 +355,9 @@ geschlossen = " (geschlossen)"
 bahnhoefe = "<b>Bahnhöfe</b>"
 # {kuerzel}, {bahnhof}, {status}
 bahnhof_zeile = "{kuerzel}. {bahnhof}: {status}"
+# Bei verdecktem Punktestand (Besitzer geheim). {status} = leer oder „ (geschlossen)“
+geheim = "🙈 Wem was gehört, bleibt bis zum Spielende geheim."
+# {nummer}, {bar}, {status}
+zeile_geheim = "{nummer}. {bar}{status}"
+# {kuerzel}, {bahnhof}, {status}
+bahnhof_zeile_geheim = "{kuerzel}. {bahnhof}{status}"
