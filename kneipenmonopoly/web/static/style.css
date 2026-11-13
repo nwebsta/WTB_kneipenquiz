@@ -181,6 +181,25 @@ label.check { flex-direction: row; align-items: center; gap: .4rem; }
 }
 .leaflet-tooltip.num-label::before { display: none; }
 
+/* Texte */
+.tx-sec { margin: 1.4rem 0 .6rem; font-family: ui-monospace, Consolas, monospace; font-size: 1rem; color: var(--muted); }
+.tx-head { display: flex; gap: .5rem; align-items: center; margin-bottom: .3rem; }
+.tx-comment { white-space: pre-line; margin: .2rem 0 .5rem; }
+.tx-ph { margin: .2rem 0 .6rem; line-height: 1.9; }
+.tx-chip { font: inherit; font-size: .85rem; padding: .05rem .45rem; margin-right: .3rem; border: 1px solid #cbc4ba;
+  border-radius: 999px; background: #f6f3ef; cursor: pointer; }
+.tx-chip:hover { background: #ece6dd; }
+.tx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; align-items: start; }
+.tx-grid textarea { width: 100%; font: .92rem/1.45 ui-monospace, Consolas, monospace; padding: .5rem; border: 1px solid #cbc4ba;
+  border-radius: 8px; resize: vertical; min-height: 70px; }
+.tx-preview { background: #dfe9f2; border-radius: 10px; padding: .6rem; }
+.tx-bubble { background: #fff; border-radius: 12px 12px 12px 4px; padding: .5rem .7rem; box-shadow: 0 1px 1px rgba(0,0,0,.12);
+  overflow-wrap: anywhere; font-size: .95rem; }
+.tx-bubble code { background: #f0f0f0; padding: 0 .2rem; border-radius: 3px; }
+.tx-val { background: #fff3c4; border-radius: 3px; padding: 0 .1rem; }
+.tx-warn { color: var(--bad); margin-top: .4rem; }
+@media (max-width: 760px) { .tx-grid { grid-template-columns: 1fr; } }
+
 /* Karten-Editor */
 .editor { display: flex; height: calc(100vh - 48px); }
 #ed-map { flex: 1; min-width: 0; }

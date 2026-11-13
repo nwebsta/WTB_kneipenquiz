@@ -220,7 +220,7 @@ Spielstand, `.env` und `texte.toml` bleiben erhalten.
 nicht über Git. Dafür gibt es unter Verwaltung → **Export / Import**:
 
 1. Auf dem Laptop **Setup exportieren** klicken. Die heruntergeladene JSON-Datei enthält Teams, Aktionskarten,
-   Ereigniskarten, Aufgaben, Spieldauer und alle Kneipen, Bahnhöfe und Reserve-Bars.
+   Ereigniskarten, Aufgaben, Spieldauer, geänderte Bot-Texte und alle Kneipen, Bahnhöfe und Reserve-Bars.
 2. Auf dem Server dieselbe Datei unter **Importieren** hochladen und die gewünschten Teile anhaken.
 
 Importieren geht nur in der Vorbereitung, also vor dem Start oder nach „Spiel zurücksetzen“.
@@ -432,7 +432,17 @@ wieder auf Vorbereitung. **Vor dem echten Abend den Testmodus ausschalten.**
 ### Texte anpassen
 
 Alle Texte, die der Bot an die Teams schickt, stehen in **`texte.toml`** im Projektordner.
-Datei öffnen, Text ändern, speichern. Der Bot übernimmt das sofort, ohne Neustart.
+Am einfachsten bearbeitest du sie im Reiter **Texte** der Admin-Seite:
+
+- **Vorschau:** wie eine Telegram-Nachricht, mit Beispielwerten für die Platzhalter. Die Platzhalter sind gelb markiert.
+- **Platzhalter:** Bei jedem Text steht, welche es gibt und was dahinter steckt. Ein Klick fügt sie ein.
+- **Speichern** wirkt sofort. **Auf Standard zurücksetzen** holt den Originaltext zurück.
+- **Prüfung:** Unbekannte Platzhalter, kaputte Klammern, ein nacktes `&` oder nicht geschlossene `<b>` werden
+  abgelehnt, bevor Telegram die Nachricht verweigern könnte.
+- **Suche** und der Filter „nur geänderte“ helfen beim Finden. Über den Download-Knopf bekommst du die Datei.
+- **„reiner Text“** markiert Buttons, Pop-ups und die Bildunterschrift. Dort zeigt Telegram keine Formatierung.
+
+Natürlich geht auch der direkte Weg: Datei öffnen, Text ändern, speichern. Der Bot übernimmt das sofort, ohne Neustart.
 
 ```toml
 [checkin]

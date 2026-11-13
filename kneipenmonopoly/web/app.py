@@ -23,6 +23,7 @@ from ..gamedata import load_game_data
 from ..service import (EVENT_CARD_KINDS, PHASE_LABEL, SETUP_PARTS, Game, fmt_duration, normalize_game_data,
                        parse_iso)
 from ..simulation import SPEEDS, Simulator
+from ..texts import PLACEHOLDER_INFO
 
 log = logging.getLogger(__name__)
 HERE = Path(__file__).resolve().parent
@@ -604,6 +605,45 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
+
+    # ---------------------------------------------------------------- Texte bearbeiten
+    @app.get("/texte", response_class=HTMLResponse)
+    async def texts_page(request: Request):
+        admin(request)
+        t = G(request).t
+        entries = t.entries()
+        sections = []
+        for e in entries:
+            if not sections or sections[-1] != e["section"]:
+                sections.append(e["section"])
+        return render(request, "texte.html", entries=entries, sections=sections,
+                      placeholder_info={k: {"info": v[0], "beispiel": v[1]} for k, v in PLACEHOLDER_INFO.items()},
+                      texts_file=str(t.user_path) if t.user_path else "")
+
+    @app.post("/texte/api/speichern")
+    async def texts_save(request: Request):
+        who = admin(request)
+        body = await request.json()
+        t = G(request).t
+        key = str(body.get("key", ""))
+        if body.get("reset"):
+            err = t.reset(key)
+        else:
+            err = t.save(key, str(body.get("value", "")))
+        if err:
+            return JSONResponse({"ok": False, "message": err}, status_code=422)
+        log.info("Text %s geändert von %s", key, who)
+        entry = next((e for e in t.entries() if e["key"] == key), None)
+        return JSONResponse({"ok": True, "message": "Gespeichert, der Bot nutzt den Text ab sofort.", "entry": entry})
+
+    @app.get("/texte/datei")
+    async def texts_download(request: Request):
+        admin(request)
+        t = G(request).t
+        if not t.user_path or not t.user_path.exists():
+            return PlainTextResponse("Keine Textdatei vorhanden", status_code=404)
+        return FileResponse(t.user_path, media_type="application/toml",
+                            headers={"Content-Disposition": f'attachment; filename="texte-{_stamp()}.toml"'})
 
     # ---------------------------------------------------------------- Karten-Editor
     @app.get("/editor", response_class=HTMLResponse)

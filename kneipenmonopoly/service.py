@@ -37,6 +37,7 @@ SETUP_PARTS = {
     "ereigniskarten": "Ereigniskarten",
     "aufgaben": "Aufgaben pro Feld und Zufallsaufgaben",
     "einstellungen": "Spieldauer und „Punktestand verdecken“",
+    "texte": "Texte des Bots (geänderte; alle anderen auf Standard)",
 }
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -1693,6 +1694,7 @@ class Game:
             "tasks": self.tasks(),
             "random_tasks": [r["text"] for r in self.random_tasks()],
             "settings": {"duration_min": self.duration_min(), "scores_hidden": self.scores_hidden()},
+            "texts": self.t.overrides(),
             "spieldaten": self.game_data_raw(),
         }
 
@@ -1873,6 +1875,12 @@ class Game:
             if "scores_hidden" in st:
                 self.set_scores_hidden(bool(st["scores_hidden"]))
             done.append("Einstellungen (Spieldauer, Punktestand verdeckt)")
+        if "texte" in parts and isinstance(payload.get("texts"), dict):
+            err, n, skipped = self.t.import_overrides(payload["texts"])
+            if err:
+                return ActionResult(False, f"Texte nicht importiert: {err}")
+            done.append(f"{n} geänderte(r) Text(e), alle anderen auf Standard"
+                        + (f" ({len(skipped)} übersprungen: {'; '.join(skipped[:3])})" if skipped else ""))
         if not done:
             return ActionResult(False, "Nichts importiert: keiner der gewählten Teile ist in der Datei enthalten.")
         return ActionResult(True, "Import fertig: " + "; ".join(done) + ".")

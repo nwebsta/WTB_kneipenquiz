@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Texte{% endblock %}
+{% block content %}
+<h1>Texte des Bots</h1>
+<div class="card">
+  <p>Hier änderst du alle Nachrichten, die der Bot an die Teams schickt. <b>Speichern</b> wirkt sofort, ohne Neustart.
+     Platzhalter in <code>{geschweiften Klammern}</code> füllt der Bot beim Senden. Was dahinter steckt, steht bei jedem Text.
+     Formatierung wie in Telegram: <code>&lt;b&gt;fett&lt;/b&gt;</code>, <code>&lt;i&gt;kursiv&lt;/i&gt;</code>,
+     <code>&lt;code&gt;Code&lt;/code&gt;</code>. Ein echtes <code>&amp;</code> als <code>&amp;amp;</code> schreiben. Leerer Text = wird nicht gesendet.</p>
+  <div class="row">
+    <input id="tx-search" placeholder="Suchen (Text oder Name) …" class="grow">
+    <label class="check"><input type="checkbox" id="tx-changed"> nur geänderte</label>
+    <a class="btn" href="/texte/datei">⬇️ texte.toml herunterladen</a>
+  </div>
+  <nav class="subnav small">{% for s in sections %}<a href="#sec-{{ s }}">{{ s }}</a>{% endfor %}</nav>
+</div>
+
+{% set ns = namespace(section='') %}
+{% for e in entries %}
+  {% if e.section != ns.section %}{% set ns.section = e.section %}<h2 id="sec-{{ e.section }}" class="tx-sec">[{{ e.section }}]</h2>{% endif %}
+  <article class="card tx" data-key="{{ e.key }}" data-changed="{{ 1 if e.changed else 0 }}" data-plain="{{ 1 if e.plain else 0 }}">
+    <div class="tx-head">
+      <code>{{ e.key }}</code>
+      {% if e.plain %}<span class="tag" title="Button, Pop-up oder Bildunterschrift: Telegram zeigt keine Formatierung">reiner Text</span>{% endif %}
+      <span class="tag warn tx-changed-tag" {% if not e.changed %}hidden{% endif %}>geändert</span>
+      <span class="tag tx-dirty" hidden>nicht gespeichert</span>
+    </div>
+    {% if e.comment %}<p class="tx-comment small muted">{{ e.comment }}</p>{% endif %}
+    {% if e.placeholders %}
+      <div class="tx-ph">
+        {% for p in e.placeholders %}
+          <button type="button" class="tx-chip" data-ph="{{ p }}" title="Einfügen">{<b>{{ p }}</b>}</button>
+          <span class="small muted">{{ placeholder_info[p].info if p in placeholder_info else 'Platzhalter' }}{% if p in placeholder_info and placeholder_info[p].beispiel %}, z.B. „{{ placeholder_info[p].beispiel | plain | trim }}“{% endif %}</span><br>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="tx-grid">
+      {#- Der Zeilenumbruch nach <textarea> wird vom Browser verschluckt, damit führende Leerzeilen erhalten bleiben. #}
+      <textarea rows="{{ [3, (e.value.count('\n') + 2)] | max }}" spellcheck="true">
+{{ e.value }}</textarea>
+      <div class="tx-preview"><div class="tx-bubble"></div><div class="tx-warn small"></div></div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary small tx-save" disabled>💾 Speichern</button>
+      <button type="button" class="btn small tx-reset" {% if not e.changed %}hidden{% endif %}>Auf Standard zurücksetzen</button>
+      <span class="small tx-status"></span>
+    </div>
+  </article>
+{% endfor %}
+
+<script id="tx-examples" type="application/json">{{ placeholder_info | tojson }}</script>
+<script src="/static/texte.js"></script>
+{% endblock %}

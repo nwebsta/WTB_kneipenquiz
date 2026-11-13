@@ -49,6 +49,21 @@ def test_round_trip_laptop_to_server(tmp_path):
     assert server.duration_min() == 150
 
 
+def test_texts_travel_with_setup(tmp_path):
+    laptop = make(tmp_path, "laptop")
+    assert laptop.t.save("spiel.start", "🚦 <b>Prost, los!</b>") is None
+    exported = json.loads(json.dumps(laptop.export_setup()))
+    assert exported["texts"] == {"spiel.start": "🚦 <b>Prost, los!</b>"}      # nur Geänderte
+    server = make(tmp_path, "server")
+    assert server.t.save("spiel.pause", "Pause!") is None                     # wird durch Import Standard
+    exported["texts"]["gibts.nicht"] = "x"                                     # ungültig -> übersprungen
+    res = server.import_setup(exported, {"texte"})
+    assert res.ok and "übersprungen" in res.message, res.message
+    assert server.t("spiel.start") == "🚦 <b>Prost, los!</b>"
+    assert server.t("spiel.pause") == server.t.defaults["spiel.pause"].rstrip("\n")
+    assert server.t.overrides() == {"spiel.start": "🚦 <b>Prost, los!</b>"}
+
+
 def test_only_selected_parts(tmp_path):
     laptop = make(tmp_path, "laptop")
     laptop.add_action_card("Nur diese")
