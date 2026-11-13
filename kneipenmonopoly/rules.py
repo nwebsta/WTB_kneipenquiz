@@ -288,8 +288,21 @@ def replay(events: list[Event], board: Board, cfg: RuleConfig) -> State:
 
 
 def preview(state: State, ev: Event, board: Board, cfg: RuleConfig) -> list[Entry]:
-    """Welche Buchungen würde dieses Ereignis auf dem aktuellen Stand auslösen?"""
+    """Welche Buchungen würde dieses Ereignis auf dem aktuellen Stand auslösen?
+
+    Achtung: rechnet am ENDE des Verlaufs. Für die Prüf-Vorschau `preview_in_history` nehmen.
+    """
     return apply(state, ev, board, cfg).entries_for(ev.id)
+
+
+def preview_in_history(events: list[Event], ev: Event, board: Board, cfg: RuleConfig) -> list[Entry]:
+    """Buchungen des Ereignisses genau so, wie die echte Freigabe sie bucht.
+
+    Das Ereignis wird wie bei `replay` an seiner zeitlichen Stelle einsortiert (Uploadzeit des Fotos,
+    Anfragezeit der Aktion). So stimmt die Vorschau auch, wenn sich seit dem Upload etwas geändert hat,
+    z.B. doppelte Punkte oder eine Besitz-Korrektur.
+    """
+    return replay(list(events) + [ev], board, cfg).entries_for(ev.id)
 
 
 def ranking(points: dict[int, int], teams: list[int]) -> list[tuple[int, int, int]]:

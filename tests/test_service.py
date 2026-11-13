@@ -671,6 +671,42 @@ def test_open_scores_still_show_owners(g):
     assert "Alpha" in g.felder_text()
 
 
+def test_preview_matches_booking_for_old_photo_and_action(g):
+    """Foto/Aktion vor „doppelte Punkte“ eingereicht, danach geprüft: Vorschau = tatsächliche Buchung."""
+    run(g.start_game("anna"))
+    a = tid(g, "Alpha")
+    g.add_action_card("Tanzen")
+    g.clock_obj.advance(minutes=145)
+    g.checkin(a, "die-eule", *EULE)
+    run(g.request_action(a))
+    g.submit_photo(a, None, "f", "alt")
+    g.clock_obj.advance(minutes=10)
+    run(g.sweep())
+    assert g.state().multiplier == 2                       # Doppelt-Karte ist inzwischen aktiv
+    sub, call = g.pending_submissions()[0], g.open_calls()[0]
+    assert [e.delta for e in g.preview(sub)] == [1]
+    assert [e.delta for e in g.call_preview(call, True)] == [1]
+    assert [e.delta for e in g.call_preview(call, False)] == [-1]
+    before = g.state().points_of(a)
+    run(g.approve(sub["id"], "anna"))
+    run(g.decide_call(call["id"], "anna", True))
+    assert g.state().points_of(a) - before == 2
+
+
+def test_preview_doubles_after_card(g):
+    """Nach der Doppelt-Karte hochgeladen: Vorschau und Buchung doppelt."""
+    run(g.start_game("anna"))
+    a = tid(g, "Alpha")
+    g.clock_obj.advance(minutes=151)
+    run(g.sweep())
+    g.checkin(a, "die-eule", *EULE)
+    g.submit_photo(a, None, "f", "neu")
+    sub = g.pending_submissions()[0]
+    assert [e.delta for e in g.preview(sub)] == [2]
+    run(g.approve(sub["id"], "anna"))
+    assert g.state().points_of(a) == 2
+
+
 def test_final_waits_for_open_calls(g):
     run(g.start_game("anna"))
     a = tid(g, "Alpha")

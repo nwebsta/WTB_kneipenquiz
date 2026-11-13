@@ -948,7 +948,7 @@ class Game:
     def call_preview(self, call, success: bool) -> list[R.Entry]:
         ev = R.Event(10**9, iso(self.clock()), R.ACTION_DECIDED,
                      {"team": call["team_id"], "success": success, "requested_at": call["requested_at"]})
-        return R.preview(self.state(), ev, self.board, self.s.rules)
+        return R.preview_in_history(self.db.events(), ev, self.board, self.s.rules)
 
     async def decide_call(self, call_id: int, admin: str, success: bool) -> ActionResult:
         with self.db.tx() as conn:
@@ -1116,7 +1116,7 @@ class Game:
         ev = R.Event(10**9, iso(self.clock()), R.VISIT_APPROVED,
                      {"team": sub["team_id"], "spot": sub["spot_id"], "submitted_at": sub["submitted_at"],
                       "task_done": task_done})
-        return R.preview(self.state(), ev, self.board, self.s.rules)
+        return R.preview_in_history(self.db.events(), ev, self.board, self.s.rules)
 
     def describe_entry(self, e: R.Entry) -> str:
         names = self.team_names()
