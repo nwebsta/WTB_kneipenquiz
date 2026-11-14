@@ -5,6 +5,7 @@ import asyncio
 import html
 import json
 import logging
+import os
 import re
 import secrets
 from contextlib import asynccontextmanager
@@ -605,6 +606,33 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
+
+    async def _zip_download(request: Request, build, prefix: str) -> FileResponse:
+        """ZIP in eine temporäre Datei bauen (im Hintergrund-Thread), ausliefern, danach löschen."""
+        admin(request)
+        import tempfile
+        from starlette.background import BackgroundTask
+        fd, tmp = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+        try:
+            await asyncio.to_thread(lambda: build_to(tmp, build))
+        except Exception:
+            Path(tmp).unlink(missing_ok=True)
+            raise
+        return FileResponse(tmp, media_type="application/zip", filename=f"{prefix}-{_stamp()}.zip",
+                            background=BackgroundTask(lambda: Path(tmp).unlink(missing_ok=True)))
+
+    def build_to(path: str, build) -> None:
+        with open(path, "wb") as f:
+            build(f)
+
+    @app.get("/export/fotos.zip")
+    async def export_photos(request: Request):
+        return await _zip_download(request, G(request).export_photos_zip, "fotos")
+
+    @app.get("/export/chats.zip")
+    async def export_chats(request: Request):
+        return await _zip_download(request, G(request).export_chats_zip, "chats")
 
     # ---------------------------------------------------------------- Texte bearbeiten
     @app.get("/texte", response_class=HTMLResponse)

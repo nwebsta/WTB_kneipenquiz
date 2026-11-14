@@ -14,6 +14,7 @@ import logging
 import random
 import secrets
 import shutil
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1608,6 +1609,88 @@ class Game:
             w.writerow([r["id"], local, r["actor"], r["type"], r["text"], "ja" if r["revoked"] else "",
                         bookings, json.dumps(r["data"], ensure_ascii=False)])
         return buf.getvalue()
+
+    # --- Fotos und Chats als ZIP (nur lesen, ändert nichts an den Daten) -----
+    @staticmethod
+    def _safe_name(text: str) -> str:
+        bad = '<>:"/\\|?*'
+        out = "".join("_" if c in bad or ord(c) < 32 else c for c in str(text)).strip(" .")
+        return out[:60] or "unbenannt"
+
+    def _chat_label(self, team_id: int | None, chat_title: str | None, chat_id: int | None) -> str:
+        if team_id is not None:
+            return self.team_name(team_id)
+        return f"Ohne Team - {chat_title or chat_id or 'unbekannt'}"
+
+    def export_photos_zip(self, out) -> int:
+        """Alle gespeicherten Fotos, ein Ordner pro Team, plus Übersicht fotos.csv. Gibt die Anzahl zurück."""
+        status_de = {"pending": "offen", "approved": "angenommen", "rejected": "abgelehnt", "revoked": "zurueckgenommen"}
+        photos: dict[str, dict] = {}
+        for m in self.db.all("SELECT * FROM messages WHERE photo_path IS NOT NULL ORDER BY id"):
+            photos.setdefault(m["photo_path"], {
+                "ts": m["ts"], "folder": self._chat_label(m["team_id"], m["chat_title"], m["chat_id"]),
+                "sender": m["sender"] or "", "caption": m["text"] or "", "spot": "", "status": "chat"})
+        for s in self.db.all("SELECT * FROM submissions WHERE photo_path IS NOT NULL ORDER BY id"):
+            info = photos.setdefault(s["photo_path"], {"sender": "", "caption": ""})
+            info.update(ts=s["submitted_at"], folder=self.team_name(s["team_id"]),
+                        spot=self.spot(s["spot_id"]).name
+                        if s["spot_id"] in self.data.fields or s["spot_id"] in self.data.stations else s["spot_id"],
+                        status=status_de.get(s["status"], s["status"]))
+        buf = io.StringIO()
+        w = csv.writer(buf, delimiter=";")
+        w.writerow(["Datei", "Zeit (lokal)", "Team/Chat", "Feld", "Status", "Absender", "Bildunterschrift"])
+        used: set[str] = set()
+        n = 0
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:
+            for path, info in sorted(photos.items(), key=lambda kv: kv[1]["ts"]):
+                p = Path(path)
+                if not p.is_file():
+                    continue
+                when = self.local(info["ts"]).strftime("%Y-%m-%d_%H-%M-%S")
+                label = info["spot"] or "Chat"
+                base = f"{self._safe_name(info['folder'])}/{when}_{self._safe_name(label)}_{info['status']}"
+                name, i = f"{base}{p.suffix or '.jpg'}", 2
+                while name in used:
+                    name, i = f"{base}_{i}{p.suffix or '.jpg'}", i + 1
+                used.add(name)
+                z.write(p, name)
+                w.writerow([name, when.replace("_", " "), info["folder"], info["spot"], info["status"],
+                            info["sender"], info["caption"]])
+                n += 1
+            z.writestr("fotos.csv", "﻿" + buf.getvalue())
+        return n
+
+    def export_chats_zip(self, out) -> int:
+        """Alle Chat-Verläufe: eine lesbare Textdatei pro Team/Gruppe plus alle_nachrichten.csv."""
+        rows = self.db.all("SELECT * FROM messages ORDER BY ts, id")
+        kinds = {"photo": "📷 Foto", "location": "📍 Standort"}
+        per_chat: dict[str, list[str]] = {}
+        buf = io.StringIO()
+        w = csv.writer(buf, delimiter=";")
+        w.writerow(["Zeit (lokal)", "Team/Chat", "Richtung", "Absender", "Art", "Text", "Breite", "Länge", "Foto"])
+        for m in rows:
+            chat = self._chat_label(m["team_id"], m["chat_title"], m["chat_id"])
+            when = self.local(m["ts"]).strftime("%Y-%m-%d %H:%M:%S")
+            who = m["sender"] or ("Bot" if m["direction"] == "out" else "?")
+            arrow = "→" if m["direction"] == "out" else "←"
+            parts = []
+            if m["kind"] in kinds:
+                parts.append(f"[{kinds[m['kind']]}]")
+            if m["kind"] == "location" and m["lat"] is not None:
+                parts.append(f"{m['lat']:.6f}, {m['lon']:.6f}")
+            if m["text"]:
+                parts.append(m["text"])
+            body = " ".join(parts).replace("\n", "\n    ")
+            per_chat.setdefault(chat, []).append(f"[{when}] {arrow} {who}: {body}")
+            w.writerow([when, chat, "Bot/Spielleitung" if m["direction"] == "out" else "Gruppe", who, m["kind"],
+                        m["text"] or "", m["lat"] if m["lat"] is not None else "",
+                        m["lon"] if m["lon"] is not None else "", Path(m["photo_path"]).name if m["photo_path"] else ""])
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            for chat, lines in sorted(per_chat.items()):
+                z.writestr(f"{self._safe_name(chat)}.txt",
+                           f"Chat: {chat}\n← = Gruppe an Bot, → = Bot/Spielleitung an Gruppe\n\n" + "\n".join(lines) + "\n")
+            z.writestr("alle_nachrichten.csv", "﻿" + buf.getvalue())
+        return len(rows)
 
     # =========================================================================
     # Spielkarte als Bild (Telegram + Vorschau)
