@@ -55,3 +55,55 @@ def test_export_needs_login(ctx):  # noqa: F811
     client, _ = ctx
     for path in ("/export/fotos.zip", "/export/chats.zip"):
         assert client.get(path, follow_redirects=False).status_code in (303, 401)
+
+
+# ---------------------------------------------------------------- Recap-PDF
+def test_recap_data_balances_and_game_time(tmp_path):
+    from test_service import Clock, run, visit
+    from kneipenmonopoly.config import load_settings
+    from kneipenmonopoly.db import DB
+    from kneipenmonopoly.gamedata import load_game_data
+    from kneipenmonopoly.service import Game, NullNotifier
+    from test_web import ROOT
+
+    s = load_settings(env={"DATA_DIR": str(tmp_path), "TEXTS_PATH": str(tmp_path / "t.toml"),
+                           "GAME_DATA_PATH": str(ROOT / "kneipenmonopoly_spieldaten.json")})
+    clock = Clock()
+    g = Game(s, load_game_data(s.game_data_path), DB(s.db_path), NullNotifier(), clock=clock)
+    g.create_team("Alpha", "#f00", "AAA")
+    g.create_team("Pils-Piraten mit sehr langem Namen", "#ffff00", "BBB")
+    a, b = (t["id"] for t in g.teams())
+    run(g.start_game("anna"))
+    clock.advance(minutes=10)
+    visit(g, a, EULE)                                   # Alpha kauft Die Eule: +1
+    clock.advance(minutes=5)
+    run(g.pause_game("anna"))
+    clock.advance(minutes=20)
+    run(g.resume_game("anna"))
+    clock.advance(minutes=5)
+    visit(g, b, EULE)                                   # Miete: Alpha +1
+    clock.advance(minutes=1)
+    run(g.adjust_points(b, -2, "anna", "Test"))
+    run(g.end_game("anna"))
+
+    d = g.recap_data()
+    assert [(r.delta, r.balances[a], r.balances[b]) for r in d.rows] == [(1, 1, 0), (1, 2, 0), (-2, 2, -2)]
+    assert round(d.rows[0].game_min) == 10 and round(d.rows[1].game_min) == 20   # Pause zählt nicht
+    assert len(d.pauses) == 1 and "gespielt 0:21" in d.subtitle
+    assert [t.place for t in d.teams] == [1, 2]
+
+    out = tmp_path / "recap.pdf"
+    assert g.export_recap_pdf(out) == 2
+    assert out.read_bytes().startswith(b"%PDF")
+
+
+def test_recap_pdf_download_and_empty_game(ctx):  # noqa: F811
+    client, game = ctx
+    login(client)
+    r = client.get("/export/recap.pdf")                 # vor dem Start: leeres Recap, kein Fehler
+    assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"
+    assert r.content.startswith(b"%PDF") and "recap-" in r.headers["content-disposition"]
+    for i in range(8):                                  # viele Teams: eine Saldo-Spalte statt je Team
+        game.create_team(f"Team {i}", "#123456", f"T{i}X")
+    assert client.get("/export/recap.pdf").content.startswith(b"%PDF")
+    assert "Recap (PDF)" in client.get("/protokoll").text

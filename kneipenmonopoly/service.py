@@ -25,6 +25,7 @@ from .config import Settings
 from .db import DB
 from .gamedata import GameData, GameDataError, distance_m, parse_game_data
 from .mapimage import MapField, MapGroup, MapSpec, MapStation, render_map
+from .recap import RecapData, RecapRow, RecapTeam, fmt_game, render_recap_pdf
 from .texts import Raw, Texts
 
 log = logging.getLogger(__name__)
@@ -1621,6 +1622,61 @@ class Game:
         if team_id is not None:
             return self.team_name(team_id)
         return f"Ohne Team - {chat_title or chat_id or 'unbekannt'}"
+
+    def recap_data(self) -> RecapData:
+        """Alle Punktebuchungen in Spielreihenfolge, mit Uhrzeit, Spielzeit und Stand aller Teams danach."""
+        events = self.db.events()
+        st = R.replay(events, self.board, self.s.rules)
+        when = {e.id: e.sort_key[0] for e in events}
+        start = parse_iso(st.started_at) if st.started_at else None
+        ended = [e.ts for e in events if e.type == R.GAME_ENDED]
+        end = parse_iso(ended[-1]) if ended else None
+        pauses, since = [], None
+        for e in events:
+            if e.type == R.GAME_PAUSED and since is None:
+                since = parse_iso(e.ts)
+            elif e.type == R.GAME_RESUMED and since is not None:
+                pauses.append((since, parse_iso(e.ts)))
+                since = None
+        if since is not None:
+            pauses.append((since, end or self.clock()))
+
+        def game_min(t: datetime) -> float | None:
+            if start is None:
+                return None
+            paused = sum(max(0.0, (min(b, t) - max(a, start)).total_seconds()) for a, b in pauses)
+            return ((t - start).total_seconds() - paused) / 60
+
+        teams = self.teams()
+        ids = [t["id"] for t in teams]
+        balance = {i: 0 for i in ids}
+        rows = []
+        for x in st.ledger:
+            if not x.delta:
+                continue
+            balance[x.team] = balance.get(x.team, 0) + x.delta
+            t = parse_iso(when.get(x.event_id) or iso(self.clock()))
+            rows.append(RecapRow(self.local(t), game_min(t), x.team, x.delta, self.describe_entry(x), dict(balance)))
+        place = {tid: p for p, tid, _ in R.ranking(st.points, ids)}
+        rteams = [RecapTeam(t["id"], t["name"], t["color"], st.points_of(t["id"]), place.get(t["id"], 0))
+                  for t in teams]
+        sub = []
+        if start:
+            sub.append(f"{self.local(start):%d.%m.%Y}, {self.local(start):%H:%M}"
+                       + (f"–{self.local(end):%H:%M} Uhr" if end else " Uhr"))
+            if end:
+                played = game_min(end)
+                sub.append(f"gespielt {fmt_game(played)} h (ohne Pausen)")
+        else:
+            sub.append("Spiel noch nicht gestartet")
+        sub.append(f"{len(teams)} Teams")
+        return RecapData(f"Recap {self.data.game}", " · ".join(sub), rteams, rows,
+                         self.local(start) if start else None, self.local(end) if end else None,
+                         self.local(self.clock()),
+                         [(self.local(a), self.local(b)) for a, b in pauses])
+
+    def export_recap_pdf(self, out) -> int:
+        return render_recap_pdf(self.recap_data(), out)
 
     def export_photos_zip(self, out) -> int:
         """Alle gespeicherten Fotos, ein Ordner pro Team, plus Übersicht fotos.csv. Gibt die Anzahl zurück."""

@@ -607,19 +607,20 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         return Response(G(request).export_json(), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="spiel-{_stamp()}.json"'})
 
-    async def _zip_download(request: Request, build, prefix: str) -> FileResponse:
-        """ZIP in eine temporäre Datei bauen (im Hintergrund-Thread), ausliefern, danach löschen."""
+    async def _zip_download(request: Request, build, prefix: str, ext: str = "zip",
+                            media_type: str = "application/zip") -> FileResponse:
+        """Datei in eine temporäre Datei bauen (im Hintergrund-Thread), ausliefern, danach löschen."""
         admin(request)
         import tempfile
         from starlette.background import BackgroundTask
-        fd, tmp = tempfile.mkstemp(suffix=".zip")
+        fd, tmp = tempfile.mkstemp(suffix="." + ext)
         os.close(fd)
         try:
             await asyncio.to_thread(lambda: build_to(tmp, build))
         except Exception:
             Path(tmp).unlink(missing_ok=True)
             raise
-        return FileResponse(tmp, media_type="application/zip", filename=f"{prefix}-{_stamp()}.zip",
+        return FileResponse(tmp, media_type=media_type, filename=f"{prefix}-{_stamp()}.{ext}",
                             background=BackgroundTask(lambda: Path(tmp).unlink(missing_ok=True)))
 
     def build_to(path: str, build) -> None:
@@ -629,6 +630,10 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
     @app.get("/export/fotos.zip")
     async def export_photos(request: Request):
         return await _zip_download(request, G(request).export_photos_zip, "fotos")
+
+    @app.get("/export/recap.pdf")
+    async def export_recap(request: Request):
+        return await _zip_download(request, G(request).export_recap_pdf, "recap", "pdf", "application/pdf")
 
     @app.get("/export/chats.zip")
     async def export_chats(request: Request):
