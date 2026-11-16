@@ -41,6 +41,7 @@ class Settings:
     port: int = 8000
     ssl_certfile: Path | None = None   # gesetzt = HTTPS (Zertifikat, PEM)
     ssl_keyfile: Path | None = None    # privater Schlüssel (PEM)
+    public_https: bool = False         # hinter nginx/HAProxy mit HTTPS (App selbst spricht HTTP auf 127.0.0.1)
 
     @property
     def https(self) -> bool:
@@ -137,6 +138,7 @@ def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None 
         port=_int(env, "PORT", 8000),
         ssl_certfile=Path(env["SSL_CERTFILE"]) if env.get("SSL_CERTFILE") else None,
         ssl_keyfile=Path(env["SSL_KEYFILE"]) if env.get("SSL_KEYFILE") else None,
+        public_https=_bool(env.get("PUBLIC_HTTPS"), False),
         checkin_radius_m=_int(env, "CHECKIN_RADIUS_M", 50),
         checkin_timeout_min=_int(env, "CHECKIN_TIMEOUT_MIN", 20),
         cooldown_min=_int(env, "COOLDOWN_MIN", 30),

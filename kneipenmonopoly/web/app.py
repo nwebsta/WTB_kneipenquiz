@@ -112,7 +112,7 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
     secret = settings.session_secret or secrets.token_hex(32)
     # Bei HTTPS wird das Login-Cookie nur verschlüsselt übertragen.
     app.add_middleware(SessionMiddleware, secret_key=secret, same_site="strict", max_age=14 * 24 * 3600,
-                       session_cookie="km_session", https_only=settings.https)
+                       session_cookie="km_session", https_only=settings.https or settings.public_https)
     app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
     # ---------------------------------------------------------------- Helfer

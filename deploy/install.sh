@@ -9,14 +9,17 @@
 #     sudo bash /opt/kneipenmonopoly/deploy/install.sh
 #
 # Optionen:
-#     --configure   Port, HTTP/HTTPS, Bot-Token und Passwort neu abfragen
+#     --configure   Master-Passwort, Port und HTTP/HTTPS (auch HAProxy + Let's Encrypt) neu abfragen
 #     --no-pull     keinen git pull machen
 #     --no-tests    Tests vor dem Neustart überspringen
 #     --tailscale   Tailscale (VPN) installieren und die Seite nur dort anbieten
 #
 # Ohne Terminal (z.B. automatisiert) lassen sich die Antworten vorgeben:
 #     PORT=8443 PROTOCOL=https-selbst MASTER_PASSWORD=... sudo -E bash deploy/install.sh
-#     PROTOCOL: http | https-eigen | https-selbst   (bei https-eigen zusätzlich CERT_FILE und KEY_FILE)
+#     PROTOCOL: http | https-eigen | https-selbst | haproxy
+#       https-eigen: zusätzlich CERT_FILE und KEY_FILE
+#       haproxy:     zusätzlich DOMAINS ("a.de b.de"), LE_EMAIL, HAPROXY_IPS ("10.0.0.5"),
+#                    PUBLIC_HTTP_PORT (80), PUBLIC_HTTPS_PORT (443)
 # =============================================================================
 set -euo pipefail
 
@@ -156,17 +159,27 @@ if [ "$FIRST_RUN" -eq 1 ] || [ "$CONFIGURE" -eq 1 ]; then
       echo "  1) HTTP  (unverschlüsselt, z.B. nur über VPN)"
       echo "  2) HTTPS mit eigenem Zertifikat (Pfade zu Zertifikat und Schlüssel angeben)"
       echo "  3) HTTPS mit selbst erzeugtem Zertifikat (ohne Domain; Browser warnt einmal)"
-      DEF=1; [ "$CUR_PROTO" = "https" ] && DEF=2
+      echo "  4) Hinter HAProxy (TCP, send-proxy auf HTTP und HTTPS) mit Let's-Encrypt-Zertifikat"
+      echo "     (installiert nginx + certbot; die App lauscht dann nur noch auf 127.0.0.1)"
+      DEF=1; [ "$CUR_PROTO" = "https" ] && DEF=2; [ "$(env_get PROXY_MODE)" = "haproxy" ] && DEF=4
       CHOICE="$(ask 'Auswahl' "$DEF")"
     else
-      CHOICE=1; [ "$CUR_PROTO" = "https" ] && CHOICE=keep
+      CHOICE=1; { [ "$CUR_PROTO" = "https" ] || [ "$(env_get PROXY_MODE)" = "haproxy" ]; } && CHOICE=keep
     fi
     case "$CHOICE" in
-      1) PROTOCOL=http ;; 2) PROTOCOL=https-eigen ;; 3) PROTOCOL=https-selbst ;; keep) PROTOCOL=keep ;;
+      1) PROTOCOL=http ;; 2) PROTOCOL=https-eigen ;; 3) PROTOCOL=https-selbst ;; 4) PROTOCOL=haproxy ;;
+      keep) PROTOCOL=keep ;;
       *) die "Ungültige Auswahl: $CHOICE" ;;
     esac
   fi
   mkdir -p "$CERT_DIR"
+  # Wechsel weg vom HAProxy-Betrieb: nginx-Seite abschalten, App wieder direkt erreichbar
+  if [ "$PROTOCOL" != "haproxy" ] && [ "$PROTOCOL" != "keep" ] && [ "$(env_get PROXY_MODE)" = "haproxy" ]; then
+    rm -f /etc/nginx/sites-enabled/kneipenmonopoly
+    systemctl reload nginx 2>/dev/null || true
+    env_set PROXY_MODE ""; env_set PUBLIC_HTTPS "false"
+    [ "$(env_get HOST)" = "127.0.0.1" ] && env_set HOST "0.0.0.0"
+  fi
   case "$PROTOCOL" in
     http)
       env_set SSL_CERTFILE ""; env_set SSL_KEYFILE "" ;;
@@ -188,8 +201,34 @@ if [ "$FIRST_RUN" -eq 1 ] || [ "$CONFIGURE" -eq 1 ]; then
         -addext "subjectAltName=$SAN" -keyout "$CERT_DIR/key.pem" -out "$CERT_DIR/cert.pem" 2>/dev/null
       env_set SSL_CERTFILE "$CERT_DIR/cert.pem"; env_set SSL_KEYFILE "$CERT_DIR/key.pem"
       echo "    Selbst erzeugtes Zertifikat für: $SAN" ;;
+    haproxy)
+      CUR_DOMAINS="$(env_get PUBLIC_DOMAINS)"
+      DOMAINS_IN="${DOMAINS:-$(ask 'Domain(s), mit Leerzeichen getrennt (z.B. kneipe.example.de)' "$CUR_DOMAINS")}"
+      [ -n "$DOMAINS_IN" ] || die "Mindestens eine Domain angeben (DNS muss auf HAProxy zeigen)."
+      for d in $DOMAINS_IN; do
+        [[ "$d" =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || die "Keine gültige Domain: $d"
+      done
+      EMAIL_IN="${LE_EMAIL:-$(ask "E-Mail für Let's Encrypt (Ablauf-Warnungen)" "$(env_get LE_EMAIL)")}"
+      [[ "$EMAIL_IN" == *@*.* ]] || die "Bitte eine gültige E-Mail-Adresse für Let's Encrypt angeben."
+      IPS_IN="${HAPROXY_IPS:-$(ask 'IP(s) des HAProxy-Servers, mit Leerzeichen getrennt (für echte Besucher-IPs)' "$(env_get HAPROXY_IPS)")}"
+      HP="${PUBLIC_HTTP_PORT:-$(ask 'Port hier, auf den HAProxy HTTP weiterleitet (send-proxy)' "$(env_get PUBLIC_HTTP_PORT | grep . || echo 80)")}"
+      SP="${PUBLIC_HTTPS_PORT:-$(ask 'Port hier, auf den HAProxy HTTPS weiterleitet (send-proxy)' "$(env_get PUBLIC_HTTPS_PORT | grep . || echo 443)")}"
+      for x in "$HP" "$SP"; do
+        [[ "$x" =~ ^[0-9]+$ ]] && [ "$x" -ge 1 ] && [ "$x" -le 65535 ] || die "Ungültiger Port: $x"
+      done
+      [ "$HP" != "$SP" ] || die "HTTP- und HTTPS-Port müssen verschieden sein."
+      APP_PORT="$(env_get PORT)"; APP_PORT="${APP_PORT:-8000}"
+      if [ "$APP_PORT" = "$HP" ] || [ "$APP_PORT" = "$SP" ]; then
+        die "Der Port der App ($APP_PORT) ist derselbe wie ein nginx-Port. Bitte für die App z.B. 8000 wählen."
+      fi
+      env_set PUBLIC_DOMAINS "$DOMAINS_IN"; env_set LE_EMAIL "$EMAIL_IN"; env_set HAPROXY_IPS "$IPS_IN"
+      env_set PUBLIC_HTTP_PORT "$HP"; env_set PUBLIC_HTTPS_PORT "$SP"
+      env_set PROXY_MODE "haproxy"; env_set PUBLIC_HTTPS "true"
+      env_set SSL_CERTFILE ""; env_set SSL_KEYFILE ""
+      env_set HOST "127.0.0.1"
+      echo "    nginx nimmt auf $HP/$SP das PROXY-Protokoll an, die App läuft intern auf 127.0.0.1:$APP_PORT" ;;
     keep) ;;
-    *) die "PROTOCOL muss http, https-eigen oder https-selbst sein" ;;
+    *) die "PROTOCOL muss http, https-eigen, https-selbst oder haproxy sein" ;;
   esac
   [ -f "$CERT_DIR/key.pem" ] && chmod 600 "$CERT_DIR/key.pem"
 fi
@@ -294,11 +333,106 @@ if [ "$OK" -ne 1 ]; then
   die "Der Dienst antwortet nicht. Log oben, live mit: journalctl -u $SERVICE -f"
 fi
 
+# --- 13. nginx + Let's Encrypt (nur im HAProxy-Betrieb) -------------------------------
+nginx_conf() {  # nginx_conf MIT_TLS(0/1)
+  local domains http_port https_port app_port ips real_ip="" ip
+  domains="$(env_get PUBLIC_DOMAINS)"; http_port="$(env_get PUBLIC_HTTP_PORT)"; https_port="$(env_get PUBLIC_HTTPS_PORT)"
+  app_port="$(env_get PORT)"; app_port="${app_port:-8000}"; ips="$(env_get HAPROXY_IPS)"
+  for ip in $(echo "$ips" | tr ',' ' '); do real_ip="$real_ip    set_real_ip_from $ip;"$'\n'; done
+  [ -n "$real_ip" ] && real_ip="$real_ip    real_ip_header proxy_protocol;"$'\n'
+  cat <<NGX
+# Erzeugt von deploy/install.sh – Änderungen werden beim nächsten Lauf überschrieben.
+# HAProxy (TCP-Modus, send-proxy) -> nginx (PROXY-Protokoll, TLS) -> App auf 127.0.0.1:$app_port
+server {
+    listen $http_port proxy_protocol;
+    server_name $domains;
+$real_ip
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+    }
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+NGX
+  [ "$1" = "1" ] || return 0
+  cat <<NGX
+
+server {
+    listen $https_port ssl proxy_protocol;
+    server_name $domains;
+$real_ip
+    ssl_certificate     /etc/letsencrypt/live/kneipenmonopoly/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kneipenmonopoly/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:kneipe_ssl:10m;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass http://127.0.0.1:$app_port;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$proxy_protocol_addr;
+        proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 120s;
+    }
+}
+NGX
+}
+
+if [ "$(env_get PROXY_MODE)" = "haproxy" ]; then
+  say "nginx und Let's-Encrypt-Zertifikat (HAProxy mit send-proxy)"
+  apt-get install -y -qq nginx certbot >/dev/null
+  mkdir -p /var/www/certbot
+  rm -f /etc/nginx/sites-enabled/default        # lauscht sonst ohne PROXY-Protokoll auf Port 80
+  SITE=/etc/nginx/sites-available/kneipenmonopoly
+  LIVE=/etc/letsencrypt/live/kneipenmonopoly
+  WANT="$(env_get PUBLIC_DOMAINS)"
+  HAVE=""
+  [ -f "$LIVE/cert.pem" ] && HAVE="$(openssl x509 -in "$LIVE/cert.pem" -noout -ext subjectAltName 2>/dev/null \
+                                     | grep -o 'DNS:[^,]*' | sed 's/DNS://' | sort | tr '\n' ' ')"
+  WANT_SORTED="$(echo $WANT | tr ' ' '\n' | sort | tr '\n' ' ')"
+  if [ ! -f "$LIVE/fullchain.pem" ] || [ "$HAVE" != "$WANT_SORTED" ]; then
+    # Erst nur HTTP (für die Prüfung von Let's Encrypt), dann Zertifikat holen
+    nginx_conf 0 > "$SITE"
+    ln -sf "$SITE" /etc/nginx/sites-enabled/kneipenmonopoly
+    nginx -t >/dev/null 2>&1 || { nginx -t; die "nginx-Konfiguration fehlerhaft"; }
+    systemctl enable --now nginx >/dev/null 2>&1; systemctl reload nginx
+    DARGS=""; for d in $WANT; do DARGS="$DARGS -d $d"; done
+    # shellcheck disable=SC2086
+    certbot certonly --webroot -w /var/www/certbot --cert-name kneipenmonopoly $DARGS \
+      --email "$(env_get LE_EMAIL)" --agree-tos --non-interactive --keep-until-expiring --expand \
+      || die "Zertifikat konnte nicht geholt werden. Prüfen: DNS von $WANT zeigt auf HAProxy, HAProxy leitet Port 80 \
+per TCP mit send-proxy auf Port $(env_get PUBLIC_HTTP_PORT) dieses Servers weiter."
+  fi
+  nginx_conf 1 > "$SITE"
+  ln -sf "$SITE" /etc/nginx/sites-enabled/kneipenmonopoly
+  nginx -t >/dev/null 2>&1 || { nginx -t; die "nginx-Konfiguration fehlerhaft"; }
+  systemctl enable --now nginx >/dev/null 2>&1; systemctl reload nginx
+  # Automatische Erneuerung: certbot.timer + nginx neu laden
+  mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+  printf '#!/bin/sh\nsystemctl reload nginx\n' > /etc/letsencrypt/renewal-hooks/deploy/kneipenmonopoly-nginx.sh
+  chmod 755 /etc/letsencrypt/renewal-hooks/deploy/kneipenmonopoly-nginx.sh
+  systemctl enable --now certbot.timer >/dev/null 2>&1 || warn "certbot.timer nicht gefunden: Erneuerung per Cron einrichten (certbot renew)"
+  echo "    Zertifikat gültig bis: $(openssl x509 -in "$LIVE/cert.pem" -noout -enddate | cut -d= -f2)"
+fi
+
 say "Fertig"
 VERSION="$(git -C "$APP_DIR" log -1 --format='%h %cd' --date=format:'%d.%m.%Y %H:%M' 2>/dev/null || echo '?')"
 echo "    Version:      $VERSION"
-echo "    Startseite:   $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/   (Sessions anlegen/anmelden)"
-echo "    Master:       $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/master"
+if [ "$(env_get PROXY_MODE)" = "haproxy" ]; then
+  MAIN_DOMAIN="$(env_get PUBLIC_DOMAINS | awk '{print $1}')"
+  echo "    Startseite:   https://$MAIN_DOMAIN/   (Sessions anlegen/anmelden)"
+  echo "    Master:       https://$MAIN_DOMAIN/master"
+  echo "    HAProxy:      TCP-Modus, 'send-proxy' auf beiden Backends (HTTP -> :$(env_get PUBLIC_HTTP_PORT), HTTPS -> :$(env_get PUBLIC_HTTPS_PORT))"
+  echo "    Erneuerung:   automatisch (certbot.timer), Test: sudo certbot renew --dry-run"
+else
+  echo "    Startseite:   $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/   (Sessions anlegen/anmelden)"
+  echo "    Master:       $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/master"
+fi
 [ "$SCHEME" = "https" ] && [ "${PROTOCOL:-}" = "https-selbst" ] && \
   echo "    Hinweis:      Selbst erzeugtes Zertifikat – der Browser warnt einmal, „Trotzdem fortfahren“."
 if [ "$(env_get HOST)" = "0.0.0.0" ] && [ "$DO_TAILSCALE" -eq 0 ]; then

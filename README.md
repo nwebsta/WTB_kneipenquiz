@@ -218,6 +218,7 @@ Für Debian, Ubuntu und Raspberry Pi OS gibt es `deploy/install.sh`. Das Skript 
   1. HTTP ohne Verschlüsselung, etwa nur über VPN
   2. HTTPS mit **eigenem Zertifikat**: Pfade zu Zertifikat und Schlüssel im PEM-Format angeben
   3. HTTPS mit **selbst erzeugtem Zertifikat**: ohne Domain, der Browser warnt einmal
+  4. **Hinter HAProxy mit Let's Encrypt** (certbot + nginx), siehe [Hinter HAProxy](#hinter-haproxy-mit-lets-encrypt)
 - **Vor jedem Neustart** laufen die Tests, und die Datenbanken aller Sessions werden gesichert. Es bleiben die
   letzten 10 Sicherungen in `data/backups/`. Achtung: Darin stecken auch Sessions, die inzwischen gelöscht sind,
   bis die Sicherung nach 10 Updates herausfällt.
@@ -274,7 +275,7 @@ wieder her. Die Spielkarte für die Teams wird automatisch aus den importierten 
 
 | Option | Wirkung |
 |---|---|
-| `--configure` | Master-Passwort, Port und HTTP/HTTPS neu abfragen |
+| `--configure` | Master-Passwort, Port und HTTP/HTTPS (auch HAProxy + Let's Encrypt) neu abfragen |
 | `--tailscale` | Tailscale installieren und die Seite nur im VPN anbieten |
 | `--no-tests` | Tests überspringen |
 | `--no-pull` | keinen `git pull` machen |
@@ -287,6 +288,51 @@ journalctl -u kneipenmonopoly -f        # Log live
 sudo nano /opt/kneipenmonopoly/.env     # Einstellungen, danach: sudo systemctl restart kneipenmonopoly
 sudo ls /opt/kneipenmonopoly/data/sessions/  # ein Ordner pro Session (Datenbank, Fotos, texte.toml)
 ```
+
+### Hinter HAProxy mit Let's Encrypt
+
+Für den Betrieb mit Domain hinter einem **HAProxy auf einem anderen Server**, der HTTP und HTTPS per **TCP mit
+`send-proxy`** weiterleitet. `sudo bash /opt/kneipenmonopoly/deploy/install.sh --configure`, dann **4** wählen.
+Das Skript fragt:
+
+- **Domain(s)**, mit Leerzeichen getrennt. Ihr DNS muss auf HAProxy zeigen.
+- **E-Mail** für Let's Encrypt (Warnungen, falls die Erneuerung scheitert).
+- **IP(s) des HAProxy-Servers**: Nur dann übernimmt nginx die echte Besucher-IP aus dem PROXY-Header.
+- **Ports** dieses Servers, auf die HAProxy HTTP und HTTPS schickt (Vorgabe 80 und 443).
+
+Danach läuft es so: **HAProxy → nginx → App**.
+
+- **nginx** (wird installiert) nimmt auf beiden Ports das PROXY-Protokoll (v1 und v2) an und beantwortet auf HTTP die
+  Prüfung von Let's Encrypt (`/.well-known/acme-challenge/`). Alles andere leitet es auf HTTPS um.
+- **Auf HTTPS** macht nginx TLS mit dem Zertifikat und reicht an die App auf `127.0.0.1:PORT` weiter.
+- **Die App** ist von außen nicht mehr direkt erreichbar. Das Login-Cookie wird nur noch verschlüsselt übertragen.
+- **certbot** holt das Zertifikat per webroot. `certbot.timer` erneuert es automatisch, danach lädt nginx neu.
+  Test: `sudo certbot renew --dry-run`. Bei geänderten Domains holt das Skript beim nächsten Lauf ein neues Zertifikat.
+
+Beispiel für HAProxy (TCP-Modus):
+
+```
+frontend kneipe_http
+    bind :80
+    mode tcp
+    default_backend kneipe_http
+frontend kneipe_https
+    bind :443
+    mode tcp
+    default_backend kneipe_https
+
+backend kneipe_http
+    mode tcp
+    server kneipe 10.0.0.20:80 send-proxy check
+backend kneipe_https
+    mode tcp
+    server kneipe 10.0.0.20:443 send-proxy check
+```
+
+Mit `send-proxy-v2` geht es genauso. Auf Port 80 und 443 dieses Servers muss **jede** Verbindung den PROXY-Header
+haben. Direkte Aufrufe ohne HAProxy lehnt nginx ab. Am besten lässt die Firewall die beiden Ports nur von der
+HAProxy-IP zu. Klappt das Zertifikat nicht, bricht das Skript mit einem Hinweis ab. Häufige Ursachen: DNS zeigt
+noch nicht auf HAProxy, oder Port 80 wird nicht mit `send-proxy` weitergeleitet.
 
 **Achtung:** Auf einem Server im Internet ist die Seite mit `HOST=0.0.0.0` öffentlich erreichbar und nur durch
 das Passwort geschützt. Besser ist `--tailscale`, oder du lässt den Port in der Firewall nur aus dem VPN zu.

@@ -246,3 +246,14 @@ def test_web_bot_warning_and_token_change(web):
     assert "Bot läuft nicht" in client.get("/").text
     r = client.post("/session/token", data={"token": TOKEN_B})
     assert "Neuer Bot läuft" in r.text and m.get(sid).settings.bot_token == TOKEN_B
+
+
+def test_cookie_secure_behind_https_proxy(tmp_path):
+    m = SessionManager(settings(tmp_path, PUBLIC_HTTPS="true"), run_bots=False, check_token=fake_check)
+    with TestClient(create_app(m.base, manager=m), base_url="https://testserver") as client:
+        r = client.post("/master/login", data={"password": "master123"}, follow_redirects=False)
+        assert "secure" in r.headers["set-cookie"].lower()
+    m2 = SessionManager(settings(tmp_path / "b"), run_bots=False, check_token=fake_check)
+    with TestClient(create_app(m2.base, manager=m2)) as client:
+        r = client.post("/master/login", data={"password": "master123"}, follow_redirects=False)
+        assert "secure" not in r.headers["set-cookie"].lower()
