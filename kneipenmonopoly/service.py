@@ -299,13 +299,17 @@ class Game:
     # =========================================================================
     def spot(self, spot_id: str, state: R.State | None = None) -> Spot:
         st = state or self.state()
+        rid = st.replaced.get(spot_id)
         if spot_id in self.data.stations:
             s = self.data.stations[spot_id]
+            if rid and rid in self.data.reserve:          # Bahnhof durch Reserve ersetzt (gemeinsamer Pool)
+                r = self.data.reserve[rid]
+                return Spot(s.id, "station", r.name, r.lat, r.lon, r.address, None, "Bahnhof", "#222222",
+                            spot_id not in st.inactive, original_name=s.name)
             return Spot(s.id, "station", s.name, s.lat, s.lon, s.venue, None, "Bahnhof", "#222222",
                         spot_id not in st.inactive)
         f = self.data.fields[spot_id]
         g = self.data.groups[f.group]
-        rid = st.replaced.get(spot_id)
         if rid and rid in self.data.reserve:
             r = self.data.reserve[rid]
             return Spot(f.id, "field", r.name, r.lat, r.lon, r.address, g.id, g.name, g.color,
@@ -1331,8 +1335,8 @@ class Game:
         return ActionResult(True, f"{name} wieder aktiv.")
 
     async def replace_spot(self, spot_id: str, reserve_id: str | None, admin: str) -> ActionResult:
-        if spot_id not in self.data.fields:
-            return ActionResult(False, "Nur Bars lassen sich ersetzen.")
+        if spot_id not in self.data.fields and spot_id not in self.data.stations:
+            return ActionResult(False, "Unbekanntes Feld.")
         if reserve_id and reserve_id not in self.data.reserve:
             return ActionResult(False, "Unbekannte Reserve-Bar.")
         if reserve_id:
@@ -1343,8 +1347,11 @@ class Game:
         before = self.state()
         self.add_event(admin, R.FIELD_REPLACED, {"spot": spot_id, "reserve": reserve_id})
         new = self.spot(spot_id)
-        await self.send_all(self.t("korrektur.ersetzt", alt=old, neu=new.name, adresse=new.address,
-                                   strasse=new.group_name))
+        if new.kind == "station":
+            await self.send_all(self.t("korrektur.ersetzt_bahnhof", alt=old, neu=new.name, adresse=new.address))
+        else:
+            await self.send_all(self.t("korrektur.ersetzt", alt=old, neu=new.name, adresse=new.address,
+                                       strasse=new.group_name))
         await self._notify_correction(before, f"{old} ersetzt durch {new.name}")
         return ActionResult(True, f"{old} → {new.name}.")
 

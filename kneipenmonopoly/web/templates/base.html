@@ -12,6 +12,7 @@
 <body>
 <header class="top">
   <a class="brand" href="/">🍻 Kneipenmonopoly</a>
+  {% if session %}<span class="session-chip" title="Wird am {{ session.expires.strftime('%d.%m.%Y') if session.expires else '?' }} gelöscht">{{ session.name }}{% if session.bot %} · @{{ session.bot }}{% endif %}</span>{% endif %}
   <span class="phase phase-{{ phase }}">{{ phase_label }}</span>
   <nav>
     <a href="/">Dashboard</a>
@@ -25,6 +26,8 @@
     <a class="muted" href="/logout">{{ admin_name }} · Abmelden</a>
   </nav>
 </header>
+{% if session and session.bot_error %}<div class="botbanner">⚠️ Bot läuft nicht: {{ session.bot_error }} <a href="/verwaltung#session">Token prüfen</a></div>{% endif %}
+{% if session and session.days_left is not none and session.days_left < 3 %}<div class="testbanner">🗑️ Diese Session wird am {{ session.expires.strftime('%d.%m.%Y %H:%M') }} gelöscht. Recap, Fotos und Chats vorher im <a href="/protokoll">Protokoll</a> exportieren.</div>{% endif %}
 {% if texts_error %}<div class="flash err" style="margin:0;border-radius:0">⚠️ Textdatei: {{ texts_error }} – für betroffene Texte gilt der Standardtext.</div>{% endif %}
 {% if sim and sim.running %}<div class="testbanner">🤖 SIMULATION läuft: Teams spielen automatisch. <a href="/verwaltung#simulation">stoppen</a></div>{% endif %}
 {% if test_mode %}<div class="testbanner">🧪 TESTMODUS: Teams können mit <code>/checkin NUMMER</code> ohne Standort einchecken. <a href="/verwaltung#test">ausschalten</a></div>{% endif %}

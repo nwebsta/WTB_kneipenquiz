@@ -255,6 +255,8 @@ deaktiviert = "🚫 Planänderung: <b>{bar}</b> ist raus aus dem Spiel. Wem sie 
 reaktiviert = "✅ <b>{bar}</b> ist wieder im Spiel."
 # {alt}, {neu}, {adresse}, {strasse}
 ersetzt = "🔁 Planänderung: Statt <b>{alt}</b> zählt jetzt <b>{neu}</b> ({adresse}), gleiche Straße {strasse}. Besitz bleibt."
+# {alt}, {neu}, {adresse}
+ersetzt_bahnhof = "🔁 Planänderung: Statt Bahnhof <b>{alt}</b> zählt jetzt <b>{neu}</b> ({adresse}) als Bahnhof. Besitz bleibt."
 
 
 [regeln]

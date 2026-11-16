@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master · Kneipenmonopoly</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="start">
+<main class="start-wrap wide">
+  <h1>🍻 Master-Bereich</h1>
+  {% if flash %}<div class="flash {{ 'ok' if flash.ok else 'err' }}">{{ flash.msg }}</div>{% endif %}
+  {% if not enabled %}
+    <div class="card"><p>Der Master-Bereich ist aus: In der <code>.env</code> ist kein <code>MASTER_PASSWORD</code>
+      gesetzt.</p></div>
+  {% elif not logged_in %}
+    <form method="post" action="/master/login" class="card login-form">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <label>Master-Passwort
+        <input name="password" type="password" required autofocus autocomplete="current-password">
+      </label>
+      <button class="btn primary" type="submit">Anmelden</button>
+    </form>
+  {% else %}
+    <section class="card">
+      <h2>Alle Sessions <span class="muted small">({{ sessions|length }}{% if max_sessions %} von {{ max_sessions }}{% endif %})</span></h2>
+      <p class="muted small">Sessions werden {{ days }} Tage nach dem Anlegen samt Daten gelöscht.
+        „Verlängern“ gibt {{ days }} Tage dazu.</p>
+      {% if not sessions %}<p class="muted">Keine Sessions.</p>{% endif %}
+      <div class="scroll">
+      <table class="table">
+        <thead><tr><th>Name</th><th>Bot</th><th>Status</th><th>Angelegt</th><th>Löschung</th><th></th></tr></thead>
+        <tbody>
+        {% for x in sessions %}
+          <tr>
+            <td><b>{{ x.name }}</b><div class="small muted">{{ x.teams }} Teams</div></td>
+            <td>{% if x.bot %}@{{ x.bot }}{% else %}–{% endif %}
+              {% if x.bot_error %}<div class="small bad-text">⚠️ {{ x.bot_error }}</div>{% endif %}</td>
+            <td>{{ {'setup': 'Vorbereitung', 'running': 'läuft', 'paused': 'Pause', 'ended': 'beendet'}.get(x.phase, '–') }}</td>
+            <td>{{ x.created.strftime('%d.%m.%Y') }}</td>
+            <td>{{ x.expires.strftime('%d.%m.%Y %H:%M') }}<div class="small muted">noch {{ x.days_left }} Tage</div></td>
+            <td>
+              <div class="row nowrap">
+                <form method="post" action="/master/{{ x.id }}/oeffnen"><button class="btn small">Öffnen</button></form>
+                <form method="post" action="/master/{{ x.id }}/verlaengern"><button class="btn small">+{{ days }} Tage</button></form>
+                <form method="post" action="/master/{{ x.id }}/loeschen"
+                      onsubmit="return confirm('Session „{{ x.name }}“ mit allen Fotos und Chats endgültig löschen?')">
+                  <button class="btn small bad">Löschen</button></form>
+              </div>
+              <form method="post" action="/master/{{ x.id }}/passwort" class="row nowrap" style="margin-top:.3rem">
+                <input name="password" type="password" minlength="{{ min_pw }}" required placeholder="neues Passwort"
+                       autocomplete="new-password">
+                <button class="btn small">Setzen</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </section>
+    <p class="small"><a href="/login">Zur Startseite</a> · <a href="/master/logout">Master abmelden</a></p>
+  {% endif %}
+  {% if not logged_in %}<p class="small"><a href="/login">Zur Startseite</a></p>{% endif %}
+</main>
+</body>
+</html>

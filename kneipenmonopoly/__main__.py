@@ -31,16 +31,16 @@ def main() -> int:
     problems = []
     if not Path(".env").exists():
         problems.append(".env fehlt: .env.example nach .env kopieren und ausfuellen")
-    if not s.admin_password:
-        problems.append("ADMIN_PASSWORD fehlt in .env (Datei gespeichert?)")
+    if not s.effective_master_password:
+        logging.warning("MASTER_PASSWORD fehlt in .env: Der Master-Bereich (alle Sessions verwalten) ist aus.")
+    elif not s.master_password:
+        logging.warning("MASTER_PASSWORD fehlt in .env: Für den Master-Bereich gilt vorerst ADMIN_PASSWORD.")
     if not s.session_secret:
         # Einmal erzeugen und merken, damit Admins nach einem Neustart angemeldet bleiben.
         secret_file = s.data_dir / "session_secret"
         if not secret_file.exists():
             secret_file.write_text(secrets.token_hex(32), encoding="utf-8")
         s.session_secret = secret_file.read_text(encoding="utf-8").strip()
-    if not s.bot_token:
-        logging.warning("BOT_TOKEN fehlt: Es läuft nur die Webseite, ohne Telegram-Bot.")
     try:
         load_game_data(s.active_game_data_path)
     except GameDataError as e:
@@ -61,7 +61,7 @@ def main() -> int:
 
     app = create_app(s)
     scheme = "https" if s.https else "http"
-    logging.info("Admin-Seite: %s://%s:%s/", scheme, "localhost" if s.host == "0.0.0.0" else s.host, s.port)
+    logging.info("Startseite (Sessions): %s://%s:%s/", scheme, "localhost" if s.host == "0.0.0.0" else s.host, s.port)
     ssl = {"ssl_certfile": str(s.ssl_certfile), "ssl_keyfile": str(s.ssl_keyfile)} if s.https else {}
     uvicorn.run(app, host=s.host, port=s.port, log_level="warning", proxy_headers=True, **ssl)
     return 0

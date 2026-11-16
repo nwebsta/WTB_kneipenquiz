@@ -15,7 +15,7 @@
 #     --tailscale   Tailscale (VPN) installieren und die Seite nur dort anbieten
 #
 # Ohne Terminal (z.B. automatisiert) lassen sich die Antworten vorgeben:
-#     PORT=8443 PROTOCOL=https-selbst BOT_TOKEN=... ADMIN_PASSWORD=... sudo -E bash deploy/install.sh
+#     PORT=8443 PROTOCOL=https-selbst MASTER_PASSWORD=... sudo -E bash deploy/install.sh
 #     PROTOCOL: http | https-eigen | https-selbst   (bei https-eigen zusätzlich CERT_FILE und KEY_FILE)
 # =============================================================================
 set -euo pipefail
@@ -128,24 +128,18 @@ chmod 600 "$ENV_FILE"
 
 if [ "$FIRST_RUN" -eq 1 ] || [ "$CONFIGURE" -eq 1 ]; then
   say "Konfiguration"
-  # Telegram-Bot
-  TOKEN="${BOT_TOKEN:-$(env_get BOT_TOKEN)}"
+  # Bot-Token und Passwort gehören jetzt zu jeder Session und werden auf der Startseite der
+  # Webseite beim Anlegen einer Session eingegeben. Hier nur das Master-Passwort (alle Sessions verwalten).
+  PW="${MASTER_PASSWORD:-$(env_get MASTER_PASSWORD)}"
   if interactive; then
-    read -r -p "Telegram-Bot-Token von @BotFather [${TOKEN:+behalten}]: " NEW </dev/tty || true
-    TOKEN="${NEW:-$TOKEN}"
-  fi
-  env_set BOT_TOKEN "$TOKEN"
-  # Admin-Passwort
-  PW="${ADMIN_PASSWORD:-$(env_get ADMIN_PASSWORD)}"
-  if interactive; then
-    read -r -s -p "Admin-Passwort für die Webseite [${PW:+behalten}]: " NEW </dev/tty || true; echo
+    read -r -s -p "Master-Passwort (Sessions verwalten/löschen) [${PW:+behalten}]: " NEW </dev/tty || true; echo
     PW="${NEW:-$PW}"
   fi
   if [ -z "$PW" ]; then
     PW="$(openssl rand -base64 18 | tr -d '/+=')"
     echo "    Kein Passwort eingegeben, erzeugt: $PW  (bitte notieren)"
   fi
-  env_set ADMIN_PASSWORD "$PW"
+  env_set MASTER_PASSWORD "$PW"
 
   # Port
   CUR_PORT="$(env_get PORT)"; CUR_PORT="${CUR_PORT:-8000}"
@@ -200,6 +194,19 @@ if [ "$FIRST_RUN" -eq 1 ] || [ "$CONFIGURE" -eq 1 ]; then
   [ -f "$CERT_DIR/key.pem" ] && chmod 600 "$CERT_DIR/key.pem"
 fi
 
+# Update von einer Version ohne Sessions: Master-Passwort = bisheriges Admin-Passwort
+if [ -z "$(env_get MASTER_PASSWORD)" ]; then
+  OLD_PW="$(env_get ADMIN_PASSWORD)"
+  if [ -n "$OLD_PW" ]; then
+    env_set MASTER_PASSWORD "$OLD_PW"
+    warn "MASTER_PASSWORD war leer und ist jetzt das bisherige ADMIN_PASSWORD. Ändern: --configure"
+  else
+    NEW_PW="$(openssl rand -base64 18 | tr -d '/+=')"
+    env_set MASTER_PASSWORD "$NEW_PW"
+    warn "Master-Passwort erzeugt: $NEW_PW  (bitte notieren, steht in $ENV_FILE)"
+  fi
+fi
+
 # --- 7. Optional: Tailscale (VPN) --------------------------------------------------
 if [ "$DO_TAILSCALE" -eq 1 ]; then
   say "Tailscale einrichten"
@@ -224,20 +231,26 @@ if [ "$DO_TESTS" -eq 1 ]; then
   fi
 fi
 
-# --- 10. Datenbank sichern -------------------------------------------------------------
-DB="$APP_DIR/data/kneipenmonopoly.sqlite3"
-if [ -f "$DB" ]; then
-  say "Datenbank sichern"
-  mkdir -p "$APP_DIR/data/backups"
-  BACKUP="$APP_DIR/data/backups/kneipenmonopoly-$(date +%Y%m%d-%H%M%S).sqlite3"
-  "$APP_DIR/.venv/bin/python" - "$DB" "$BACKUP" <<'PYEOF'
+# --- 10. Datenbanken sichern (alle Sessions + Altbestand) ------------------------------
+DBS="$(ls -1 "$APP_DIR"/data/kneipenmonopoly.sqlite3 "$APP_DIR"/data/sessions.sqlite3 \
+        "$APP_DIR"/data/sessions/*/kneipenmonopoly.sqlite3 2>/dev/null || true)"
+if [ -n "$DBS" ]; then
+  say "Datenbanken sichern"
+  STAMP="$(date +%Y%m%d-%H%M%S)"
+  BACKUP_DIR="$APP_DIR/data/backups/$STAMP"
+  mkdir -p "$BACKUP_DIR"
+  for DB in $DBS; do
+    REL="${DB#"$APP_DIR"/data/}"; NAME="$(echo "$REL" | tr '/' '_')"
+    "$APP_DIR/.venv/bin/python" - "$DB" "$BACKUP_DIR/$NAME" <<'PYEOF'
 import sqlite3, sys
 src, dst = sqlite3.connect(sys.argv[1]), sqlite3.connect(sys.argv[2])
 src.backup(dst); dst.close(); src.close()
 PYEOF
-  ls -1t "$APP_DIR"/data/backups/*.sqlite3 | tail -n +11 | xargs -r rm -f   # nur die letzten 10 behalten
+  done
+  # nur die letzten 10 Sicherungen behalten (alte Einzeldateien und Ordner)
+  ls -1dt "$APP_DIR"/data/backups/* | tail -n +11 | xargs -r rm -rf
   chown -R "$APP_USER:$APP_USER" "$APP_DIR/data/backups"
-  echo "    $BACKUP"
+  echo "    $BACKUP_DIR"
 fi
 
 # --- 11. systemd-Dienst ----------------------------------------------------------------
@@ -266,9 +279,6 @@ WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 systemctl enable "$SERVICE" >/dev/null 2>&1
-if [ -z "$(env_get ADMIN_PASSWORD)" ]; then
-  die "ADMIN_PASSWORD fehlt in $ENV_FILE. Mit --configure neu starten oder die Datei bearbeiten."
-fi
 systemctl restart "$SERVICE"
 
 # --- 12. Prüfen ------------------------------------------------------------------------
@@ -287,7 +297,8 @@ fi
 say "Fertig"
 VERSION="$(git -C "$APP_DIR" log -1 --format='%h %cd' --date=format:'%d.%m.%Y %H:%M' 2>/dev/null || echo '?')"
 echo "    Version:      $VERSION"
-echo "    Admin-Seite:  $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/"
+echo "    Startseite:   $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/   (Sessions anlegen/anmelden)"
+echo "    Master:       $SCHEME://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT_NOW/master"
 [ "$SCHEME" = "https" ] && [ "${PROTOCOL:-}" = "https-selbst" ] && \
   echo "    Hinweis:      Selbst erzeugtes Zertifikat – der Browser warnt einmal, „Trotzdem fortfahren“."
 if [ "$(env_get HOST)" = "0.0.0.0" ] && [ "$DO_TAILSCALE" -eq 0 ]; then

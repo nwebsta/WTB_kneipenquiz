@@ -1,6 +1,8 @@
 # Kneipenmonopoly Rüttenscheid
 
 Telegram-Bot für die Teams und Admin-Webseite für die Spielleitung, in **einem** Python-Prozess.
+Mehrere Spiele laufen getrennt nebeneinander: Jede **Session** hat ihren eigenen Bot, ihr eigenes Passwort und
+ihre eigenen Daten und wird nach 30 Tagen automatisch gelöscht (siehe [Sessions](#sessions-mehrere-spiele)).
 Der Spielstand wird ausschließlich aus dem Ereignisprotokoll berechnet. Dadurch lässt sich jede
 Freigabe und jede Korrektur zurücknehmen, und nach einem Absturz geht es mit demselben Stand weiter.
 
@@ -64,7 +66,8 @@ Weitere Regeln:
   Punkte. Wem welche Bar gehört, bleibt bis Spielende geheim. `/felder` zeigt dann nur die Liste ohne Besitzer, das besuchende
   Team erfährt nicht, wem die Bar gehört, und „Straße komplett“ geht nicht an alle. Der Besitzer bekommt weiterhin die
   Meldung, wenn jemand bei ihm war.
-- **Reserve-Bars** sind nur Ersatz. Ein Ersatzfeld übernimmt Nummer, Straße und Besitzer.
+- **Reserve-Bars** sind nur Ersatz, für Kneipen und für Bahnhöfe (gemeinsamer Pool). Ein Ersatzfeld übernimmt
+  Nummer bzw. Bahnhofsbuchstaben, Straße und Besitzer. Ein ersetzter Bahnhof zählt weiter als Bahnhof.
 - **Geschlossene Bar ohne Besitzer** zählt für „Straße komplett“ nicht mehr mit.
 
 ---
@@ -95,23 +98,27 @@ nano .env
 
 In `.env` mindestens eintragen:
 
-- `BOT_TOKEN`: von BotFather, siehe nächster Abschnitt.
-- `ADMIN_PASSWORD`: gemeinsames Passwort aller Admins.
+- `MASTER_PASSWORD`: für den Master-Bereich (`/master`), in dem man alle Sessions sieht, verlängert und löscht.
 - `SESSION_SECRET` ist optional. Bleibt er leer, wird er beim ersten Start erzeugt und in `data/session_secret` gespeichert.
 
-**Die Datei nach dem Ausfüllen speichern.** Ohne `ADMIN_PASSWORD` startet der Server nicht.
+Bot-Token und Passwort eines Spiels stehen **nicht** in der `.env`. Sie werden auf der Startseite beim Anlegen einer
+Session eingegeben. `BOT_TOKEN` und `ADMIN_PASSWORD` braucht es nur noch einmalig, um ein altes Einzelspiel zu
+übernehmen (siehe [Sessions](#sessions-mehrere-spiele)). Fehlt `MASTER_PASSWORD`, gilt `ADMIN_PASSWORD` als Master-Passwort.
+
+**Die Datei nach dem Ausfüllen speichern.**
 
 Die Spieldaten kommen aus `kneipenmonopoly_spieldaten.json`, die Karte aus `Kneipenmonopoly_Spielplan.pdf`.
 Beide liegen im Projektordner. Andere Pfade lassen sich in `.env` setzen.
 
-Fotos, Datenbank und Log landen im Ordner `data/`.
+Pro Session liegen Datenbank, Fotos, Spieldaten und Texte in `data/sessions/<id>/`, die Liste der Sessions in
+`data/sessions.sqlite3`. Log, Kartenkacheln und Sicherungen liegen direkt in `data/`.
 
 ---
 
 ## 3. Telegram-Bot bei BotFather anlegen
 
 1. In Telegram **@BotFather** öffnen und `/newbot` schicken. Namen und Benutzernamen wählen.
-2. Den Token in `.env` als `BOT_TOKEN` eintragen.
+2. Den Token auf der Startseite unter **Neue Session anlegen** eintragen. Jede Session braucht einen eigenen Bot.
 3. **Privacy Mode ausschalten**, sonst sieht der Bot in Gruppen keine Fotos und Standorte:
    `/mybots` → Bot wählen → *Bot Settings* → *Group Privacy* → **Turn off**.
 4. Optional die Befehlsliste setzen: `/mybots` → Bot → *Edit Bot* → *Edit Commands* und einfügen:
@@ -161,12 +168,43 @@ ausgehendes Internet. Es muss kein Port nach außen geöffnet werden.
 
 Auf einem Linux-Server oder Raspberry Pi als Dienst mit Autostart: siehe Abschnitt **Auf einem Server installieren**.
 
-**Neustartfest:** Alles steht in SQLite (`data/kneipenmonopoly.sqlite3`). Nach einem Neustart sind
+**Neustartfest:** Alles steht in SQLite (`data/sessions/<id>/kneipenmonopoly.sqlite3`). Nach einem Neustart sind
 Spielstand, offene Check-ins, Fristen und die Prüf-Warteschlange wieder da. Telegram liefert Nachrichten,
 die während des Neustarts ankamen, nach.
 
 **Laptop als Server:** Energiesparmodus und Ruhezustand ausschalten, Netzteil dranlassen.
 Ein mobiler Hotspot reicht als Internet.
+
+### Sessions: mehrere Spiele
+
+Die Startseite zeigt alle Sessions und zwei Formulare:
+
+- **Anmelden:** Session wählen, eigenen Namen und das Passwort der Session eingeben.
+- **Neue Session anlegen:** Das darf jeder, der die Seite erreicht. Eingaben: Name des Spiels, eigener Name,
+  Bot-Token von @BotFather, Passwort (mind. 6 Zeichen, zweimal). Optional lädt man einen **Setup-Export** oder eine
+  Spieldaten-JSON hoch, um Teams, Aktionskarten, Kneipen und Texte zu übernehmen. Ohne Datei startet die Session
+  mit den Standard-Kneipen, Standard-Ereigniskarten und Standardtexten.
+
+Beim Anlegen fragt der Server Telegram, ob der Token gültig ist. Ist der Token falsch, schon von einer anderen
+Session belegt oder startet der Bot nicht, wird **nichts angelegt**. Dasselbe gilt für ein zu kurzes Passwort
+oder einen kaputten Import. Höchstens `MAX_SESSIONS` (Standard 10) Sessions gibt es gleichzeitig.
+
+**Lebensdauer:** Jede Session wird `SESSION_DAYS` (Standard 30) Tage nach dem Anlegen mit allen Fotos, Chats und
+dem Spielstand gelöscht. Oben auf der Admin-Seite steht der Name der Session, im Tooltip das Löschdatum. Drei Tage vorher
+erscheint ein Hinweis. Recap, Fotos und Chats vorher im **Protokoll** exportieren.
+
+**In der Session** (Verwaltung → **Session**): Bot-Token tauschen, etwa wenn er im BotFather widerrufen wurde,
+Passwort ändern, Session sofort löschen. Wird ein Token später ungültig, bleibt die Session erhalten. Oben erscheint
+dann eine rote Warnung „Bot läuft nicht“, bis ein neuer Token eingetragen ist.
+
+**Master-Bereich** (`/master`, Link unten auf der Startseite, Passwort `MASTER_PASSWORD`): alle Sessions mit Bot,
+Status und Löschdatum. Dort kann man eine Session öffnen (ohne ihr Passwort), um `SESSION_DAYS` Tage verlängern, ihr
+Passwort neu setzen oder sie löschen.
+
+**Übernahme des alten Einzelspiels:** Beim ersten Start nach dem Update wird ein vorhandenes Spiel
+(`data/kneipenmonopoly.sqlite3` mit Fotos, `texte.toml`, importierten Spieldaten) automatisch zur ersten Session.
+Sie nutzt `BOT_TOKEN` und `ADMIN_PASSWORD` aus der `.env`. Nichts geht verloren, für sie gelten ab dann
+ebenfalls die 30 Tage. `install.sh` sichert vorher alle Datenbanken.
 
 ### Auf einem Server installieren (Linux)
 
@@ -175,11 +213,16 @@ Für Debian, Ubuntu und Raspberry Pi OS gibt es `deploy/install.sh`. Das Skript 
 - **Pakete:** Es installiert alle Systempakete per `apt`. Ist das System-Python älter als 3.11, etwa auf Ubuntu 22.04,
   lädt es Python 3.12 über `uv` herunter.
 - **Programm:** Es legt das venv an, installiert die Python-Pakete und den Dienst-Benutzer `kneipe`.
-- **Beim ersten Lauf** fragt es nach Bot-Token, Admin-Passwort, **Port** und **HTTP oder HTTPS**:
+- **Beim ersten Lauf** fragt es nach dem **Master-Passwort**, **Port** und **HTTP oder HTTPS**. Bots und
+  Passwörter der Spiele kommen später über die Startseite:
   1. HTTP ohne Verschlüsselung, etwa nur über VPN
   2. HTTPS mit **eigenem Zertifikat**: Pfade zu Zertifikat und Schlüssel im PEM-Format angeben
   3. HTTPS mit **selbst erzeugtem Zertifikat**: ohne Domain, der Browser warnt einmal
-- **Vor jedem Neustart** laufen die Tests, und die Datenbank wird gesichert. Es bleiben die letzten 10 Sicherungen in `data/backups/`.
+- **Vor jedem Neustart** laufen die Tests, und die Datenbanken aller Sessions werden gesichert. Es bleiben die
+  letzten 10 Sicherungen in `data/backups/`. Achtung: Darin stecken auch Sessions, die inzwischen gelöscht sind,
+  bis die Sicherung nach 10 Updates herausfällt.
+- **Update von einer Version ohne Sessions:** Ist `MASTER_PASSWORD` leer, übernimmt das Skript das bisherige
+  `ADMIN_PASSWORD`.
 - **Dienst:** Es richtet einen systemd-Dienst mit Autostart ein, startet ihn und prüft, ob die Seite antwortet.
 
 **1. Code nach GitHub pushen** (auf deinem Windows-Rechner; das Repository ist `github.com/nwebsta/WTB_kneipenquiz`):
@@ -193,8 +236,7 @@ git push
 ```
 
 `.env`, `data/`, Zertifikate und `texte.toml` landen nicht im Repository (siehe `.gitignore`).
-Die Texte legt der Server beim ersten Start aus den Standardtexten an. Angepasste Texte kopierst du einmalig
-mit `scp texte.toml BENUTZER@SERVER:/tmp/` und `sudo cp /tmp/texte.toml /opt/kneipenmonopoly/` hinüber.
+Angepasste Texte bringst du am einfachsten mit dem **Setup-Export** in eine Session (Teil „Texte“).
 
 **2. Auf dem Server initial holen und installieren:**
 
@@ -214,7 +256,7 @@ sudo bash /opt/kneipenmonopoly/deploy/install.sh
 ```
 
 Das holt den Code per `git pull`, aktualisiert die Pakete, testet, sichert die Datenbank und startet neu.
-Spielstand, `.env` und `texte.toml` bleiben erhalten.
+Alle Sessions mit Spielstand, Fotos und Texten sowie die `.env` bleiben erhalten.
 
 **4. Einrichtung vom Laptop auf den Server übertragen:** Spielstand und Einrichtung liegen in `data/` und gehen
 nicht über Git. Dafür gibt es unter Verwaltung → **Export / Import**:
@@ -226,13 +268,13 @@ nicht über Git. Dafür gibt es unter Verwaltung → **Export / Import**:
 Importieren geht nur in der Vorbereitung, also vor dem Start oder nach „Spiel zurücksetzen“.
 Telegram-Verknüpfungen, Spielstand, Chats, Fotos und Passwörter werden nicht übertragen.
 Mit **Nur Kneipen/Bahnhöfe exportieren** bekommst du die Karte im Format der Spieldaten-Datei, etwa um einen Kiosk
-zu verschieben. Nach dem Bearbeiten lädst du sie genauso wieder hoch. Importierte Kneipen liegen in
-`data/spieldaten.json` und gelten vor der Datei aus dem Repository. **Import verwerfen** stellt den Repository-Stand
+zu verschieben. Nach dem Bearbeiten lädst du sie genauso wieder hoch. Importierte Kneipen liegen im Ordner der
+Session (`data/sessions/<id>/spieldaten.json`) und gelten vor der Datei aus dem Repository. **Import verwerfen** stellt den Repository-Stand
 wieder her. Die Spielkarte für die Teams wird automatisch aus den importierten Daten neu gezeichnet (siehe **Spielkarte**).
 
 | Option | Wirkung |
 |---|---|
-| `--configure` | Port, HTTP/HTTPS, Token und Passwort neu abfragen |
+| `--configure` | Master-Passwort, Port und HTTP/HTTPS neu abfragen |
 | `--tailscale` | Tailscale installieren und die Seite nur im VPN anbieten |
 | `--no-tests` | Tests überspringen |
 | `--no-pull` | keinen `git pull` machen |
@@ -243,7 +285,7 @@ Nützliche Befehle auf dem Server:
 systemctl status kneipenmonopoly        # läuft der Dienst?
 journalctl -u kneipenmonopoly -f        # Log live
 sudo nano /opt/kneipenmonopoly/.env     # Einstellungen, danach: sudo systemctl restart kneipenmonopoly
-sudo nano /opt/kneipenmonopoly/texte.toml   # Texte, wirken ohne Neustart
+sudo ls /opt/kneipenmonopoly/data/sessions/  # ein Ordner pro Session (Datenbank, Fotos, texte.toml)
 ```
 
 **Achtung:** Auf einem Server im Internet ist die Seite mit `HOST=0.0.0.0` öffentlich erreichbar und nur durch
@@ -325,8 +367,8 @@ Läuft der Server im Heimnetz, verbinden sich die Admins per VPN ins Heimnetz un
 - **Chats:** Alle Nachrichten, Fotos und Standorte, filterbar nach Team. Dort kann man auch an ein Team oder an alle schreiben.
   Der Filter **nicht verknüpfte Chats** zeigt Gruppen, die dem Bot schreiben, aber noch keinem Team zugeordnet sind,
   etwa vor dem `/join` oder nach einem falschen Code.
-- **Bar hat zu?** Verwaltung → Felder → **Ersetzen** durch eine Reserve-Bar. Besitz bleibt, alle Teams
-  werden informiert. Alternativ **Deaktivieren**.
+- **Bar oder Kiosk hat zu?** Verwaltung → Felder → **Ersetzen** durch eine Reserve aus dem gemeinsamen Pool, auch bei
+  Bahnhöfen. Besitz bleibt, alle Teams werden informiert. Alternativ **Deaktivieren**.
 - **Fehler korrigieren:** Verwaltung → Korrekturen (Besitzer setzen, Punkte buchen, immer mit Kommentar).
   Protokoll → **↩️** nimmt eine Freigabe oder Korrektur zurück. Der Stand wird komplett neu berechnet,
   inklusive Straßenbonus. Betroffene Teams bekommen eine Nachricht.
@@ -334,8 +376,9 @@ Läuft der Server im Heimnetz, verbinden sich die Admins per VPN ins Heimnetz un
 **Ende:** automatisch nach Ablauf der Spielzeit oder per **Spiel beenden**. Sobald keine Fotos mehr offen sind, geht der
 Endstand an alle Teams. Ein Klick auf „Endstand nochmal senden“ wiederholt das.
 
-**Danach:** Protokoll → **Export** (CSV/JSON) sichern. Dann Verwaltung → **Datenschutz** →
-`LÖSCHEN` eintippen. Das entfernt Fotos, Chats und Standorte. Spielstand und Protokoll bleiben.
+**Danach:** Protokoll → **Export** sichern: Recap (PDF), Fotos und Chats (ZIP), CSV/JSON. Nach 30 Tagen ist die
+Session samt Daten weg. Wer früher aufräumen will: Verwaltung → **Datenschutz** → `LÖSCHEN` eintippen
+(entfernt Fotos, Chats und Standorte) oder Verwaltung → **Session** → löschen (alles).
 
 ### Live-Simulation
 
@@ -365,7 +408,8 @@ Im Reiter **Karten-Editor** bearbeitest du die Spieldaten direkt im Browser. Lin
 
 Erst **Speichern** übernimmt die Änderungen. Der Server prüft die Daten und vergibt die Feldnummern neu, Straße für
 Straße. Die Spielkarte für die Teams wird automatisch neu gezeichnet. Vor jedem Speichern landet eine Sicherung in
-`data/spieldaten-backups/`, die letzten 20 bleiben. Gespeichert wird wie beim Import in `data/spieldaten.json`.
+`spieldaten-backups/` im Ordner der Session, die letzten 20 bleiben. Gespeichert wird wie beim Import in
+`spieldaten.json` im Ordner der Session.
 **Import verwerfen** in der Verwaltung stellt den Stand aus dem Repository wieder her.
 
 Während das Spiel läuft, lassen sich nur Namen, Adressen, Typ, Farben und Positionen ändern, zum Beispiel wenn ein
@@ -431,7 +475,8 @@ wieder auf Vorbereitung. **Vor dem echten Abend den Testmodus ausschalten.**
 
 ### Texte anpassen
 
-Alle Texte, die der Bot an die Teams schickt, stehen in **`texte.toml`** im Projektordner.
+Alle Texte, die der Bot an die Teams schickt, stehen pro Session in **`texte.toml`** im Ordner der Session
+(`data/sessions/<id>/`).
 Am einfachsten bearbeitest du sie im Reiter **Texte** der Admin-Seite:
 
 - **Vorschau:** wie eine Telegram-Nachricht, mit Beispielwerten für die Platzhalter. Die Platzhalter sind gelb markiert.
@@ -471,16 +516,18 @@ Meldungen der Admin-Webseite, etwa „Freigegeben“, stehen nicht in der Datei.
 | `tests/test_rules.py` | Punkte-Logik als reine Funktion: alle Fälle aus der Regeltabelle, Straßenbonus, Bahnhöfe, Rückgängig, Reihenfolge nach Einreichzeit, Ersatz und Deaktivierung, Rangliste |
 | `tests/test_service.py` | Join, Radius, Mehrfachauswahl, eigene Bar, Abklingzeit, doppelte Freigabe, Sperre bei gleichzeitigem Check-in, Ablehnung, Timeout, Pause, Spielzeit, Export, Löschen |
 | `tests/test_web.py` | Login-Schutz, alle Seiten, Freigabe über die Webseite, Korrekturen, Protokoll, Export |
+| `tests/test_sessions.py` | Sessions anlegen (ungültiger Token/Passwort/Import → nichts angelegt), Trennung, Ablauf nach 30 Tagen, Verlängern, Master, Übernahme des Altbestands |
+| `tests/test_export_zip.py` | Fotos/Chats als ZIP, Recap-PDF mit Salden und Spielzeit |
 
-Manuell ohne Telegram: `BOT_TOKEN` leer lassen. Dann läuft nur die Webseite.
+Die Tests starten keinen echten Bot: Telegram wird durch eine Attrappe ersetzt.
 
 ---
 
 ## 8. Generalprobe-Checkliste
 
 Probelauf mit **2 Test-Teams** und mindestens **2 Admins**, idealerweise ein paar Tage vorher auf der Rü.
-Für den Probelauf eine eigene Datenbank nehmen, z.B. `DATA_DIR=data-probe` in `.env`.
-Danach wieder auf `data` umstellen.
+Für den Probelauf am besten eine **eigene Session mit eigenem Test-Bot** anlegen. Das echte Spiel bleibt davon
+unberührt. Danach die Probe-Session löschen.
 
 **Technik**
 
@@ -504,7 +551,7 @@ Danach wieder auf `data` umstellen.
 - [ ] **Live-Standort** teilen: Der Bot bestätigt kurz und checkt **nicht** ein. Danach den normalen Standort schicken, der checkt ein.
 - [ ] Check-in in einer Bar ohne anderes Team: Kein „frei“-Hinweis, nur Foto-Anleitung.
       Unter Prüfen steht beim Foto die Live-Entfernung. Ein Stück weggehen, dann wird „jetzt“ orange oder rot.
-- [ ] Einen Text in `texte.toml` ändern und speichern. Die nächste Bot-Nachricht nutzt den neuen Text ohne Neustart.
+- [ ] Einen Text im Reiter **Texte** ändern und speichern. Die nächste Bot-Nachricht nutzt den neuen Text ohne Neustart.
 - [ ] Foto ohne Check-in: Hinweis „erst einchecken“.
 - [ ] Foto nach Check-in: „Foto eingereicht, wird geprüft.“ Es erscheint in **Prüfen**.
 
@@ -535,7 +582,7 @@ Danach wieder auf `data` umstellen.
 
 - [ ] Freigabe im **Protokoll** zurücknehmen: Punkte, Besitz und Straßenbonus stimmen danach wieder.
 - [ ] Punkte von Hand buchen und Besitzer ändern, jeweils mit Kommentar.
-- [ ] Ein Feld durch eine Reserve-Bar ersetzen: Alle Teams werden informiert, der Check-in klappt an der neuen Adresse.
+- [ ] Ein Feld und einen Bahnhof durch eine Reserve ersetzen: Alle Teams werden informiert, der Check-in klappt an der neuen Adresse.
 - [ ] **Pause:** Check-in wird abgelehnt. Nach **Weiter** ist die Frist verlängert.
 
 **Absturz und Ende**
@@ -547,7 +594,7 @@ Danach wieder auf `data` umstellen.
 
 **Vor dem echten Abend**
 
-- [ ] `DATA_DIR` zurück auf `data` stellen oder Verwaltung → **Spiel zurücksetzen**.
+- [ ] In die Session des echten Spiels wechseln (oder Verwaltung → **Spiel zurücksetzen**).
 - [ ] **Testmodus aus.** Oben auf der Admin-Seite darf kein gelbes Banner mehr stehen.
 - [ ] Echte Teams und Codes anlegen, Spieldauer setzen, Nordbahnhof prüfen.
 - [ ] `CHECKIN_TIMEOUT_MIN` und `CHECKIN_RADIUS_M` auf die Abendwerte zurücksetzen.
@@ -559,6 +606,8 @@ Danach wieder auf `data` umstellen.
 ```
 kneipenmonopoly/
   config.py      .env lesen, alle Punktwerte und Zeiten
+  sessions.py    Sessions: anlegen, starten (eigener Bot je Session), ablaufen lassen, Übernahme des Altbestands
+  recap.py       Recap-PDF (Punkteverlauf, Buchungen mit Saldo)
   gamedata.py    Spieldaten-JSON laden und prüfen
   rules.py       reine Punkte-Logik: Zustand + Ereignis → neuer Zustand, replay(), Rangliste
   texts.py       lädt texte.toml, setzt Platzhalter ein, lädt bei Änderungen neu
@@ -572,8 +621,11 @@ tests/           pytest
 deploy/          install.sh: Installation und Update auf Linux-Servern
 ```
 
-- **Ein Prozess:** FastAPI startet beim Hochfahren den Telegram-Bot und eine Hintergrundschleife für
-  Fristen, Ereigniskarten und Spielzeit. Beides läuft in derselben asyncio-Schleife.
+- **Ein Prozess:** FastAPI startet beim Hochfahren für jede Session einen eigenen Telegram-Bot und eine
+  Hintergrundschleife für Fristen, Ereigniskarten und Spielzeit. Alles läuft in derselben asyncio-Schleife.
+  Alle 5 Minuten löscht der Server abgelaufene Sessions und prüft, ob die Bot-Tokens noch gültig sind.
+- **Welche Session?** Das Login-Cookie merkt sich die Session. In einem Browser ist man also in einer Session
+  angemeldet. Zum Wechseln abmelden und die andere wählen.
 - **Ereignisse:** `GAME_STARTED`, `GAME_PAUSED`, `GAME_RESUMED`, `GAME_ENDED`, `VISIT_APPROVED`, `EVENT_REVOKED`,
   `OWNER_SET`, `POINTS_ADJUSTED`, `FIELD_DEACTIVATED`, `FIELD_REACTIVATED`, `FIELD_REPLACED`, `MULTIPLIER_SET`,
   `ACTION_DECIDED`.

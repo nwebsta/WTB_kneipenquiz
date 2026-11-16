@@ -247,6 +247,26 @@ def test_replace_field_moves_checkin_location(g):
     assert "Eingecheckt" not in (r2.text or "")
 
 
+def test_replace_station_keeps_owner_and_points(g):
+    run(g.start_game("anna"))
+    a, b = tid(g, "Alpha"), tid(g, "Beta")
+    assert visit(g, a, OST).ok                                  # Alpha besitzt Ostbahnhof
+    res = run(g.replace_spot("bahnhof-ost", "stoffwechsel", "anna"))
+    assert res.ok, res.message
+    sp = g.spot("bahnhof-ost")
+    assert sp.kind == "station" and sp.name == "Stoffwechsel" and sp.original_name
+    assert any("als Bahnhof" in t for _, t in g.notifier.sent)
+    assert g.state().owners["bahnhof-ost"] == a
+    stoff = (51.437358, 7.007849)
+    assert visit(g, b, stoff).ok                                # Check-in am Ersatzort: Bahnhofsgebühr
+    assert g.state().points_of(a) == 2
+    assert "Eingecheckt" not in (g.handle_location(b, *OST).text or "")
+    # Dieselbe Reserve kann nicht gleichzeitig ein zweites Feld ersetzen
+    assert not run(g.replace_spot("die-eule", "stoffwechsel", "anna")).ok
+    assert run(g.replace_spot("bahnhof-ost", None, "anna")).ok
+    assert g.spot("bahnhof-ost").original_name is None
+
+
 def test_end_game_and_final_ranking(g):
     run(g.start_game("anna"))
     a = tid(g, "Alpha")

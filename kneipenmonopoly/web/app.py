@@ -19,11 +19,10 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings
-from ..db import DB
-from ..gamedata import load_game_data
 from ..service import (EVENT_CARD_KINDS, PHASE_LABEL, SETUP_PARTS, Game, fmt_duration, normalize_game_data,
                        parse_iso)
-from ..simulation import SPEEDS, Simulator
+from ..sessions import MIN_PASSWORD, Runtime, SessionManager, parse_setup_upload
+from ..simulation import SPEEDS
 from ..texts import PLACEHOLDER_INFO
 
 log = logging.getLogger(__name__)
@@ -44,6 +43,10 @@ MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 
 class NotLoggedIn(Exception):
+    pass
+
+
+class MasterRequired(Exception):
     pass
 
 
@@ -86,44 +89,24 @@ def _plain(text: str | None) -> str:
     return html.unescape(re.sub(r"<[^>]+>", "", text))
 
 
-def create_app(settings: Settings, game: Game | None = None, run_bot: bool = True) -> FastAPI:
+def create_app(settings: Settings, game: Game | None = None, run_bot: bool = True,
+               manager: SessionManager | None = None) -> FastAPI:
+    """Admin-Webseite für alle Sessions. `game` (Tests): ein fertiges Spiel als einzige Session übernehmen."""
     templates = Jinja2Templates(directory=str(HERE / "templates"))
     templates.env.filters["plain"] = _plain
     templates.env.filters["age"] = _age
+    mgr = manager or SessionManager(settings, run_bots=run_bot)
+    if game is not None:
+        mgr.adopt(game, settings.admin_password)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        g = game
-        if g is None:
-            data = load_game_data(settings.active_game_data_path)
-            g = Game(settings, data, DB(settings.db_path))
-        app.state.game = g
-        app.state.sim = Simulator(g)
-        tg_app = None
-        if run_bot and settings.bot_token:
-            from ..bot import build_application, start_bot
-            tg_app = build_application(g)
-            await start_bot(tg_app)
-        elif run_bot:
-            log.warning("Kein BOT_TOKEN gesetzt: nur die Webseite läuft.")
-
-        async def sweeper():
-            while True:
-                try:
-                    await g.sweep()
-                except Exception:
-                    log.exception("Fehler im Sweeper")
-                await asyncio.sleep(20)
-
-        task = asyncio.create_task(sweeper())
+        app.state.manager = mgr
+        await mgr.start()
         try:
             yield
         finally:
-            await app.state.sim.stop()
-            task.cancel()
-            if tg_app is not None:
-                from ..bot import stop_bot
-                await stop_bot(tg_app)
+            await mgr.stop()
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     secret = settings.session_secret or secrets.token_hex(32)
@@ -133,14 +116,25 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
     app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
     # ---------------------------------------------------------------- Helfer
+    def RT(request: Request) -> Runtime:
+        """Laufende Session des angemeldeten Admins. Gelöscht/abgelaufen -> zurück zum Login."""
+        rt = mgr.get(request.session.get("sid"))
+        if rt is None or not request.session.get("admin"):
+            request.session.pop("sid", None)
+            request.session.pop("admin", None)
+            raise NotLoggedIn()
+        return rt
+
     def G(request: Request) -> Game:
-        return request.app.state.game
+        return RT(request).game
 
     def admin(request: Request) -> str:
-        name = request.session.get("admin")
-        if not name:
-            raise NotLoggedIn()
-        return name
+        RT(request)
+        return request.session["admin"]
+
+    @app.exception_handler(MasterRequired)
+    async def _master_required(request: Request, exc: MasterRequired):
+        return RedirectResponse("/master", status_code=303)
 
     @app.exception_handler(NotLoggedIn)
     async def _not_logged_in(request: Request, exc: NotLoggedIn):
@@ -152,36 +146,191 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         request.session["flash"] = {"msg": msg, "ok": ok}
 
     def render(request: Request, name: str, **ctx) -> HTMLResponse:
-        g = G(request)
+        rt = RT(request)
+        g = rt.game
         ctx.setdefault("flash", request.session.pop("flash", None))
         ctx.update(request=request, game=g, admin_name=request.session.get("admin"),
                    phase=g.phase, phase_label=PHASE_LABEL[g.phase],
                    pending=g.pending_count() + g.open_calls_count(),
-                   test_mode=g.test_mode(), texts_error=g.t.error, sim=request.app.state.sim,
-                   sim_speeds=SPEEDS)
+                   test_mode=g.test_mode(), texts_error=g.t.error, sim=rt.sim,
+                   sim_speeds=SPEEDS, session=session_info(rt))
         return templates.TemplateResponse(request, name, ctx)
 
     def back(path: str) -> RedirectResponse:
         return RedirectResponse(path, status_code=303)
 
-    # ---------------------------------------------------------------- Login
+    def session_info(rt: Runtime) -> dict:
+        info = next((x for x in mgr.overview() if x["id"] == rt.sid), None) or {}
+        return {"id": rt.sid, "name": info.get("name", rt.sid), "bot": rt.bot_username,
+                "bot_error": rt.bot_error, "expires": info.get("expires"), "days_left": info.get("days_left")}
+
+    # ---------------------------------------------------------------- Startseite / Login / Sessions
+    def login_page(request: Request, status: int = 200, **ctx) -> HTMLResponse:
+        ctx.setdefault("error", None)
+        ctx.setdefault("create_error", None)
+        ctx.setdefault("form", {})
+        ctx.setdefault("selected", request.query_params.get("s"))
+        ctx.update(sessions=mgr.overview(), max_sessions=settings.max_sessions, days=settings.session_days,
+                   min_pw=MIN_PASSWORD, flash=request.session.pop("flash", None))
+        return templates.TemplateResponse(request, "login.html", ctx, status_code=status)
+
     @app.get("/login", response_class=HTMLResponse)
     async def login_form(request: Request):
-        return templates.TemplateResponse(request, "login.html", {"error": None})
+        return login_page(request)
 
     @app.post("/login")
-    async def login(request: Request, name: str = Form(...), password: str = Form(...)):
-        if settings.admin_password and secrets.compare_digest(password.encode(), settings.admin_password.encode()) \
-                and name.strip():
-            request.session["admin"] = name.strip()[:30]
+    async def login(request: Request, name: str = Form(...), password: str = Form(...), sid: str = Form("")):
+        rows = mgr.rows()
+        if not sid and len(rows) == 1:
+            sid = rows[0]["id"]
+        if name.strip() and sid and mgr.get(sid) and await asyncio.to_thread(mgr.check_password, sid, password):
+            master = request.session.get("master")
+            request.session.clear()
+            request.session.update(sid=sid, admin=name.strip()[:30])
+            if master:
+                request.session["master"] = True
             return back("/")
         await asyncio.sleep(1.5)
-        return templates.TemplateResponse(request, "login.html", {"error": "Name oder Passwort falsch."},
-                                          status_code=401)
+        return login_page(request, 401, error="Name oder Passwort falsch.", selected=sid)
+
+    @app.post("/sessions/neu")
+    async def create_session(request: Request):
+        form = await request.form()
+
+        def get(key: str) -> str:
+            v = form.get(key)
+            return v if isinstance(v, str) else ""
+
+        values = {"session_name": get("session_name"), "name": get("name")}
+        if not get("name").strip():
+            return login_page(request, 400, create_error="Bitte deinen Namen angeben.", form=values)
+        setup = None
+        upload = form.get("datei")
+        if upload is not None and hasattr(upload, "read") and getattr(upload, "filename", ""):
+            raw = await upload.read(MAX_IMPORT_BYTES + 1)
+            if len(raw) > MAX_IMPORT_BYTES:
+                return login_page(request, 400, create_error="Die Setup-Datei ist zu groß (max. 5 MB).",
+                                  form=values)
+            if raw.strip():
+                setup, err = parse_setup_upload(raw)
+                if err:
+                    return login_page(request, 400, create_error=err, form=values)
+        res = await mgr.create(get("session_name"), get("bot_token"), get("password"), get("password2"), setup)
+        if not res.ok:
+            return login_page(request, 400, create_error=res.message, form=values)
+        master = request.session.get("master")
+        request.session.clear()
+        request.session.update(sid=res.sid, admin=get("name").strip()[:30])
+        if master:
+            request.session["master"] = True
+        info = next((x for x in mgr.overview() if x["id"] == res.sid), None)
+        flash(request, res.message + (f" Die Session wird am {info['expires']:%d.%m.%Y} automatisch gelöscht."
+                                      if info else ""))
+        return back("/")
 
     @app.get("/logout")
     async def logout(request: Request):
+        master = request.session.get("master")
         request.session.clear()
+        if master:
+            request.session["master"] = True
+        return back("/login")
+
+    # ---------------------------------------------------------------- Master-Bereich
+    def is_master(request: Request) -> bool:
+        return bool(request.session.get("master"))
+
+    def master_page_ctx(request: Request, **ctx) -> dict:
+        ctx.setdefault("error", None)
+        ctx.update(logged_in=is_master(request), sessions=mgr.overview() if is_master(request) else [],
+                   enabled=bool(settings.effective_master_password), flash=request.session.pop("flash", None),
+                   max_sessions=settings.max_sessions, days=settings.session_days, min_pw=MIN_PASSWORD)
+        return ctx
+
+    @app.get("/master", response_class=HTMLResponse)
+    async def master_page(request: Request):
+        return templates.TemplateResponse(request, "master.html", master_page_ctx(request))
+
+    @app.post("/master/login")
+    async def master_login(request: Request, password: str = Form(...)):
+        if mgr.check_master(password):
+            request.session["master"] = True
+            return back("/master")
+        await asyncio.sleep(1.5)
+        return templates.TemplateResponse(request, "master.html",
+                                          master_page_ctx(request, error="Master-Passwort falsch."),
+                                          status_code=401)
+
+    @app.get("/master/logout")
+    async def master_logout(request: Request):
+        request.session.pop("master", None)
+        return back("/master")
+
+    def need_master(request: Request) -> None:
+        if not is_master(request):
+            raise MasterRequired()
+
+    @app.post("/master/{sid}/loeschen")
+    async def master_delete(request: Request, sid: str):
+        need_master(request)
+        res = await mgr.delete(sid)
+        flash(request, res.message, res.ok)
+        return back("/master")
+
+    @app.post("/master/{sid}/verlaengern")
+    async def master_extend(request: Request, sid: str):
+        need_master(request)
+        res = mgr.extend(sid)
+        flash(request, res.message, res.ok)
+        return back("/master")
+
+    @app.post("/master/{sid}/oeffnen")
+    async def master_open(request: Request, sid: str):
+        need_master(request)
+        if mgr.get(sid) is None:
+            flash(request, "Session nicht gefunden oder nicht gestartet.", False)
+            return back("/master")
+        request.session.update(sid=sid, admin="Master")
+        return back("/")
+
+    @app.post("/master/{sid}/passwort")
+    async def master_password_reset(request: Request, sid: str, password: str = Form(...)):
+        need_master(request)
+        res = await asyncio.to_thread(mgr.set_password, sid, password)
+        flash(request, res.message, res.ok)
+        return back("/master")
+
+    # ---------------------------------------------------------------- Eigene Session verwalten
+    @app.post("/session/passwort")
+    async def session_password(request: Request, password: str = Form(...), password2: str = Form(...)):
+        rt = RT(request)
+        res = await asyncio.to_thread(mgr.set_password, rt.sid, password, password2)
+        flash(request, res.message, res.ok)
+        return back("/verwaltung#session")
+
+    @app.post("/session/token")
+    async def session_token(request: Request, token: str = Form(...)):
+        rt = RT(request)
+        if rt.game.phase in ("running", "paused") and rt.bot_error is None:
+            flash(request, "Der Bot läuft. Bitte nicht mitten im Spiel tauschen, erst das Spiel beenden.", False)
+            return back("/verwaltung#session")
+        res = await mgr.set_token(rt.sid, token)
+        flash(request, res.message, res.ok)
+        return back("/verwaltung#session")
+
+    @app.post("/session/loeschen")
+    async def session_delete(request: Request, confirm: str = Form("")):
+        rt = RT(request)
+        row = mgr.row(rt.sid)
+        if row is None or confirm.strip() != row["name"]:
+            flash(request, "Zum Löschen bitte den Namen der Session genau eintippen.", False)
+            return back("/verwaltung#session")
+        res = await mgr.delete(rt.sid)
+        master = request.session.get("master")
+        request.session.clear()
+        if master:
+            request.session["master"] = True
+        flash(request, res.message, res.ok)
         return back("/login")
 
     # ---------------------------------------------------------------- Dashboard
@@ -529,22 +678,22 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         admin(request)
         form = await request.form()
         team_ids = [int(t) for t in form.getlist("team")]
-        msg = await request.app.state.sim.start(team_ids or None, send_to_groups=bool(form.get("telegram")),
+        msg = await RT(request).sim.start(team_ids or None, send_to_groups=bool(form.get("telegram")),
                                                 auto_approve=bool(form.get("auto")),
                                                 speed=str(form.get("speed") or "") or None)
-        flash(request, msg, request.app.state.sim.running)
+        flash(request, msg, RT(request).sim.running)
         return back("/")
 
     @app.post("/verwaltung/simulation/tempo")
     async def sim_speed(request: Request, speed: str = Form(...)):
         admin(request)
-        flash(request, request.app.state.sim.set_speed(speed))
+        flash(request, RT(request).sim.set_speed(speed))
         return back("/verwaltung#simulation")
 
     @app.post("/verwaltung/simulation/stop")
     async def sim_stop(request: Request):
         admin(request)
-        flash(request, await request.app.state.sim.stop())
+        flash(request, await RT(request).sim.stop())
         return back("/verwaltung#simulation")
 
     @app.post("/verwaltung/testmodus")
@@ -561,7 +710,7 @@ def create_app(settings: Settings, game: Game | None = None, run_bot: bool = Tru
         if confirm.strip().upper() != "RESET":
             flash(request, "Zum Bestätigen bitte RESET eintippen.", False)
             return back("/verwaltung#test")
-        await request.app.state.sim.stop()
+        await RT(request).sim.stop()
         return await _do(request, G(request).reset_game())
 
     @app.post("/verwaltung/datenschutz")

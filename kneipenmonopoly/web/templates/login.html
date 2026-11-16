@@ -6,18 +6,76 @@
   <title>Login · Kneipenmonopoly</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="login">
-<form method="post" action="/login" class="card login-card">
+<body class="start">
+<main class="start-wrap">
   <h1>🍻 Kneipenmonopoly</h1>
-  <p class="muted">Admin-Bereich</p>
-  {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
-  <label>Dein Name <small>(steht im Protokoll)</small>
-    <input name="name" required maxlength="30" autocomplete="nickname" autofocus>
-  </label>
-  <label>Passwort
-    <input name="password" type="password" required autocomplete="current-password">
-  </label>
-  <button class="btn primary" type="submit">Anmelden</button>
-</form>
+  {% if flash %}<div class="flash {{ 'ok' if flash.ok else 'err' }}">{{ flash.msg }}</div>{% endif %}
+
+  <section class="card">
+    <h2>Anmelden</h2>
+    {% if sessions %}
+    <form method="post" action="/login" class="login-form">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <label>Spiel (Session)
+        <select name="sid" required>
+          {% for x in sessions %}
+            <option value="{{ x.id }}" {% if selected == x.id or (not selected and sessions|length == 1) %}selected{% endif %}>
+              {{ x.name }}{% if x.bot %} · @{{ x.bot }}{% endif %} · noch {{ x.days_left }} Tage</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Dein Name <small>(steht im Protokoll)</small>
+        <input name="name" required maxlength="30" autocomplete="nickname" autofocus>
+      </label>
+      <label>Passwort der Session
+        <input name="password" type="password" required autocomplete="current-password">
+      </label>
+      <button class="btn primary" type="submit">Anmelden</button>
+    </form>
+    {% else %}
+      <p class="muted">Noch keine Session. Leg unten die erste an.</p>
+    {% endif %}
+  </section>
+
+  <section class="card" id="neu">
+    <h2>Neue Session anlegen</h2>
+    <p class="muted small">Jede Session ist ein eigenes Spiel mit eigenem Telegram-Bot und eigenem Passwort.
+      Sie wird <b>{{ days }} Tage nach dem Anlegen automatisch gelöscht</b>, samt Fotos und Chats.
+      Vorher kannst du im Protokoll Recap, Fotos und Chats exportieren.
+      {% if max_sessions %}Höchstens {{ max_sessions }} Sessions gleichzeitig ({{ sessions|length }} belegt).{% endif %}</p>
+    {% if create_error %}<div class="flash err">{{ create_error }}</div>{% endif %}
+    {% if max_sessions and sessions|length >= max_sessions %}
+      <div class="flash err">Alle {{ max_sessions }} Plätze sind belegt. Der Master kann alte Sessions löschen.</div>
+    {% else %}
+    <form method="post" action="/sessions/neu" enctype="multipart/form-data" class="login-form">
+      <label>Name des Spiels
+        <input name="session_name" required maxlength="40" value="{{ form.session_name or '' }}"
+               placeholder="z.B. Rüttenscheid Dezember">
+      </label>
+      <label>Dein Name <small>(steht im Protokoll)</small>
+        <input name="name" required maxlength="30" value="{{ form.name or '' }}" autocomplete="nickname">
+      </label>
+      <label>Telegram-Bot-Token
+        <input name="bot_token" required autocomplete="off" spellcheck="false" placeholder="123456789:ABC…">
+        <small class="muted">Neuen Bot bei <b>@BotFather</b> mit <code>/newbot</code> anlegen und den Token hier
+          einfügen. Danach im BotFather <i>Bot Settings → Group Privacy → Turn off</i>. Jeder Bot kann nur in
+          einer Session laufen.</small>
+      </label>
+      <label>Passwort festlegen <small>(mind. {{ min_pw }} Zeichen)</small>
+        <input name="password" type="password" required minlength="{{ min_pw }}" autocomplete="new-password">
+      </label>
+      <label>Passwort wiederholen
+        <input name="password2" type="password" required minlength="{{ min_pw }}" autocomplete="new-password">
+      </label>
+      <label>Setup übernehmen <small>(optional: Setup-Export oder Spieldaten-JSON einer anderen Session)</small>
+        <input type="file" name="datei" accept=".json,application/json">
+      </label>
+      <button class="btn primary" type="submit">Session anlegen</button>
+      <p class="muted small">Der Token wird sofort bei Telegram geprüft. Klappt das nicht, wird nichts angelegt.</p>
+    </form>
+    {% endif %}
+  </section>
+  <p class="small"><a href="/master">Master-Bereich</a></p>
+</main>
 </body>
 </html>

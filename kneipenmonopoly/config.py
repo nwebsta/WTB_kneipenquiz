@@ -26,9 +26,13 @@ def _int(env: dict, key: str, default: int) -> int:
 
 @dataclass
 class Settings:
-    bot_token: str = ""
-    admin_password: str = ""
+    bot_token: str = ""                # pro Session; in der .env nur noch für die Übernahme des Altbestands
+    admin_password: str = ""           # dito; zusätzlich Ersatz für ein fehlendes MASTER_PASSWORD
     session_secret: str = ""
+    master_password: str = ""          # Master-Bereich: alle Sessions sehen, löschen, verlängern
+    max_sessions: int = 10
+    session_days: int = 30             # Sessions werden so viele Tage nach dem Anlegen gelöscht
+    shared_tile_dir: Path | None = None   # gemeinsamer Kachel-Cache aller Sessions
     game_data_path: Path = Path("kneipenmonopoly_spieldaten.json")
     map_pdf_path: Path = Path("Kneipenmonopoly_Spielplan.pdf")
     texts_path: Path = Path("texte.toml")
@@ -70,7 +74,19 @@ class Settings:
 
     @property
     def tile_cache_dir(self) -> Path:
-        return self.data_dir / "tiles"
+        return self.shared_tile_dir or self.data_dir / "tiles"
+
+    @property
+    def sessions_dir(self) -> Path:
+        return self.data_dir / "sessions"
+
+    @property
+    def registry_path(self) -> Path:
+        return self.data_dir / "sessions.sqlite3"
+
+    @property
+    def effective_master_password(self) -> str:
+        return self.master_password or self.admin_password
 
     @property
     def imported_game_data_path(self) -> Path:
@@ -110,6 +126,9 @@ def load_settings(env_file: str | os.PathLike | None = ".env", env: dict | None 
         bot_token=env.get("BOT_TOKEN", "") or "",
         admin_password=env.get("ADMIN_PASSWORD", "") or "",
         session_secret=env.get("SESSION_SECRET", "") or "",
+        master_password=env.get("MASTER_PASSWORD", "") or "",
+        max_sessions=_int(env, "MAX_SESSIONS", 10),
+        session_days=_int(env, "SESSION_DAYS", 30),
         game_data_path=Path(env.get("GAME_DATA_PATH") or "kneipenmonopoly_spieldaten.json"),
         map_pdf_path=Path(env.get("MAP_PDF_PATH") or "Kneipenmonopoly_Spielplan.pdf"),
         texts_path=Path(env.get("TEXTS_PATH") or "texte.toml"),

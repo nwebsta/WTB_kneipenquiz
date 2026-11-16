@@ -6,7 +6,7 @@
   <a href="#spiel">Spiel</a> <a href="#teams">Teams</a> <a href="#korrektur">Korrekturen</a>
   <a href="#felder">Felder</a> <a href="#aufgaben">Zufallsaufgaben</a> <a href="#ereignisse">Ereigniskarten</a>
   <a href="#aktionen">Aktionskarten</a> <a href="#spielkarte">Spielkarte</a> <a href="#import">Export/Import</a> <a href="#simulation">Simulation</a> <a href="#test">Testmodus</a>
-  <a href="#datenschutz">Datenschutz</a>
+  <a href="#datenschutz">Datenschutz</a> <a href="#session">Session</a>
 </nav>
 
 <section class="card" id="spiel">
@@ -139,7 +139,7 @@
           {% else %}
             <form method="post" action="/verwaltung/feld/{{ sp.id }}/aktivieren"><button class="btn small">Aktivieren</button></form>
           {% endif %}
-          {% if sp.kind == 'field' %}
+          {% if reserve %}
           <form method="post" action="/verwaltung/feld/{{ sp.id }}/ersetzen" class="row nowrap"
                 onsubmit="return confirm('Feld ersetzen? Alle Teams werden informiert.')">
             <select name="reserve">
@@ -369,6 +369,36 @@
      Vorher ggf. exportieren (<a href="/protokoll">Protokoll</a>).</p>
   <form method="post" action="/verwaltung/datenschutz" class="row">
     <input name="confirm" placeholder="LÖSCHEN eintippen">
+    <button class="btn bad">Endgültig löschen</button>
+  </form>
+</section>
+
+<section class="card" id="session">
+  <h2>Session „{{ session.name }}“</h2>
+  <p>Bot: {% if session.bot %}<b>@{{ session.bot }}</b>{% else %}–{% endif %}
+    {% if session.bot_error %}<span class="bad-text">⚠️ {{ session.bot_error }}</span>{% else %}· läuft{% endif %}<br>
+    Automatische Löschung samt Fotos und Chats:
+    <b>{{ session.expires.strftime('%d.%m.%Y %H:%M') if session.expires else '?' }}</b>
+    (noch {{ session.days_left }} Tage). Verlängern kann nur der Master.</p>
+  <h3>Bot-Token ändern</h3>
+  <p class="muted small">Z.B. wenn der Token im BotFather widerrufen wurde. Ein anderer Bot ist für die Teams ein
+    neuer Chatpartner: Sie müssen ihn in ihre Gruppe holen und dort <code>/join CODE</code> schicken.</p>
+  <form method="post" action="/session/token" class="row">
+    <input name="token" required class="grow" autocomplete="off" spellcheck="false" placeholder="123456789:ABC…">
+    <button class="btn">Token prüfen und übernehmen</button>
+  </form>
+  <h3>Passwort ändern</h3>
+  <form method="post" action="/session/passwort" class="row">
+    <input name="password" type="password" required minlength="6" placeholder="neues Passwort" autocomplete="new-password">
+    <input name="password2" type="password" required minlength="6" placeholder="wiederholen" autocomplete="new-password">
+    <button class="btn">Ändern</button>
+  </form>
+  <h3>Session jetzt löschen</h3>
+  <p class="muted small">Löscht dieses Spiel sofort und endgültig: Spielstand, Fotos, Chats, Kneipen, Texte.
+    Der Bot hört auf zu antworten.</p>
+  <form method="post" action="/session/loeschen" class="row"
+        onsubmit="return confirm('Session wirklich endgültig löschen?')">
+    <input name="confirm" placeholder="Namen der Session eintippen" required>
     <button class="btn bad">Endgültig löschen</button>
   </form>
 </section>
