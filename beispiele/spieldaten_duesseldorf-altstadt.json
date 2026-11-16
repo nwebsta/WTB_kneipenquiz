@@ -1,0 +1,417 @@
+{
+  "game": "Kneipenmonopoly Altstadt",
+  "city": "Düsseldorf",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      51.219463,
+      6.763742
+    ],
+    [
+      51.219463,
+      6.785258
+    ],
+    [
+      51.232937,
+      6.785258
+    ],
+    [
+      51.232937,
+      6.763742
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "et-kabueffke",
+        "da-spiegel"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "schluessel-in-den-kasematten",
+        "cocktailbar-112",
+        "bar-cherie"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "kneipe",
+        "beuys-bar",
+        "weinbar-eiskeller"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "salon-des-amateurs",
+        "sutton-s-irish-pub",
+        "rheinton-weinbar"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "sansibar-by-breuninger",
+        "kostbar",
+        "the-attic-koe-1"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "mulita",
+        "giselle",
+        "schluessel-schwemme"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "zunftstuben",
+        "galerie-am-karlplatz",
+        "zum-franz"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "stadtstrand-duesseldorf-am-mannesmannufer-rheinkniebruecke",
+        "rhein-rondell"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "et-kabueffke",
+      "no": 1,
+      "name": "Et Kabüffke",
+      "type": "bar",
+      "group": "braun",
+      "address": "Flinger Str. 1",
+      "lat": 51.225068,
+      "lon": 6.772563
+    },
+    {
+      "id": "da-spiegel",
+      "no": 2,
+      "name": "da spiegel",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "",
+      "lat": 51.226001,
+      "lon": 6.772779
+    },
+    {
+      "id": "schluessel-in-den-kasematten",
+      "no": 3,
+      "name": "Schlüssel In Den Kasematten",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "",
+      "lat": 51.225763,
+      "lon": 6.770294
+    },
+    {
+      "id": "cocktailbar-112",
+      "no": 4,
+      "name": "Cocktailbar 112",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Rheinwerft 8",
+      "lat": 51.226647,
+      "lon": 6.77052
+    },
+    {
+      "id": "bar-cherie",
+      "no": 5,
+      "name": "Bar Cherie",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Kurze Str. 2",
+      "lat": 51.226912,
+      "lon": 6.77264
+    },
+    {
+      "id": "kneipe",
+      "no": 6,
+      "name": "„Kneipe“",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Liefergasse 1",
+      "lat": 51.228548,
+      "lon": 6.773142
+    },
+    {
+      "id": "beuys-bar",
+      "no": 7,
+      "name": "Beuys Bar",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Neubrückstr. 2",
+      "lat": 51.229069,
+      "lon": 6.774996
+    },
+    {
+      "id": "weinbar-eiskeller",
+      "no": 8,
+      "name": "Weinbar Eiskeller",
+      "type": "bar",
+      "group": "pink",
+      "address": "Eiskellerberg 3",
+      "lat": 51.230128,
+      "lon": 6.775474
+    },
+    {
+      "id": "salon-des-amateurs",
+      "no": 9,
+      "name": "Salon des Amateurs",
+      "type": "bar",
+      "group": "orange",
+      "address": "Grabbeplatz 4",
+      "lat": 51.227608,
+      "lon": 6.775557
+    },
+    {
+      "id": "sutton-s-irish-pub",
+      "no": 10,
+      "name": "Sutton's Irish Pub",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Hunsrückenstr. 5",
+      "lat": 51.226865,
+      "lon": 6.77533
+    },
+    {
+      "id": "rheinton-weinbar",
+      "no": 11,
+      "name": "Rheinton Weinbar",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 51.23158,
+      "lon": 6.783208
+    },
+    {
+      "id": "sansibar-by-breuninger",
+      "no": 12,
+      "name": "Sansibar by Breuninger",
+      "type": "bar",
+      "group": "rot",
+      "address": "Königsallee 2",
+      "lat": 51.226964,
+      "lon": 6.781414
+    },
+    {
+      "id": "kostbar",
+      "no": 13,
+      "name": "Kostbar",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "",
+      "lat": 51.226281,
+      "lon": 6.776075
+    },
+    {
+      "id": "the-attic-koe-1",
+      "no": 14,
+      "name": "The Attic Kö 1",
+      "type": "bar",
+      "group": "rot",
+      "address": "",
+      "lat": 51.225798,
+      "lon": 6.778314
+    },
+    {
+      "id": "mulita",
+      "no": 15,
+      "name": "Mulita",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Kreuzstr. 27",
+      "lat": 51.223264,
+      "lon": 6.784528
+    },
+    {
+      "id": "giselle",
+      "no": 16,
+      "name": "Giselle",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Oststr. 147",
+      "lat": 51.220373,
+      "lon": 6.784486
+    },
+    {
+      "id": "schluessel-schwemme",
+      "no": 17,
+      "name": "Schlüssel Schwemme",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Bolkerstr. 43",
+      "lat": 51.226144,
+      "lon": 6.774519
+    },
+    {
+      "id": "zunftstuben",
+      "no": 18,
+      "name": "Zunftstuben",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Bilker Str. 36",
+      "lat": 51.220706,
+      "lon": 6.772929
+    },
+    {
+      "id": "galerie-am-karlplatz",
+      "no": 19,
+      "name": "GALERIE am Karlplatz",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Benrather Str. 6b",
+      "lat": 51.223139,
+      "lon": 6.772655
+    },
+    {
+      "id": "zum-franz",
+      "no": 20,
+      "name": "Zum Franz",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "",
+      "lat": 51.223911,
+      "lon": 6.772632
+    },
+    {
+      "id": "stadtstrand-duesseldorf-am-mannesmannufer-rheinkniebruecke",
+      "no": 21,
+      "name": "Stadtstrand-Düsseldorf am Mannesmannufer (Rheinkniebrücke)",
+      "type": "bar",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 51.220901,
+      "lon": 6.767098
+    },
+    {
+      "id": "rhein-rondell",
+      "no": 22,
+      "name": "Rhein Rondell",
+      "type": "bar",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 51.219637,
+      "lon": 6.764776
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Bier Paradies",
+      "lat": 51.228669,
+      "lon": 6.775276,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Kiosk",
+      "lat": 51.220785,
+      "lon": 6.784794,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "SIM CITY Postfiliale, Hohe Str. 29",
+      "lat": 51.221358,
+      "lon": 6.773995,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Kiosk am Rathaus",
+      "lat": 51.225491,
+      "lon": 6.772548,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "im-goldenen-kessel",
+      "name": "Im Goldenen Kessel",
+      "address": "Bolkerstr. 44",
+      "lat": 51.226377,
+      "lon": 6.775061
+    },
+    {
+      "id": "auberge",
+      "name": "Auberge",
+      "address": "Bolkerstr. 29",
+      "lat": 51.226084,
+      "lon": 6.773878
+    },
+    {
+      "id": "engelchen",
+      "name": "Engelchen",
+      "address": "Kurze Str. 15",
+      "lat": 51.226879,
+      "lon": 6.77346
+    },
+    {
+      "id": "opernstube",
+      "name": "Opernstube",
+      "address": "Neustr. 21",
+      "lat": 51.226906,
+      "lon": 6.776085
+    },
+    {
+      "id": "julio-s-guinness-pub",
+      "name": "Julio's Guinness Pub",
+      "address": "Mühlenstr. 15",
+      "lat": 51.227265,
+      "lon": 6.773224
+    },
+    {
+      "id": "amuni-wein-und-kaesebar",
+      "name": "Amuni Wein- und Käsebar",
+      "address": "Liefergasse 9",
+      "lat": 51.228021,
+      "lon": 6.773404
+    },
+    {
+      "id": "20-restobar",
+      "name": "20° Restobar",
+      "address": "Mutter-Ey-Platz 3",
+      "lat": 51.228239,
+      "lon": 6.774966
+    },
+    {
+      "id": "stickum",
+      "name": "Stickum",
+      "address": "Rheinstr. 3-5",
+      "lat": 51.224913,
+      "lon": 6.771666
+    }
+  ]
+}

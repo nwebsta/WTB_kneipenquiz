@@ -1,0 +1,417 @@
+{
+  "game": "Kneipenmonopoly Friedrichshain",
+  "city": "Berlin",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      52.502763,
+      13.44593
+    ],
+    [
+      52.502763,
+      13.46807
+    ],
+    [
+      52.516237,
+      13.46807
+    ],
+    [
+      52.516237,
+      13.44593
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "honolulu",
+        "zum-schmutzigen-hobby"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "ginchilla-bar",
+        "molly-malones",
+        "bier-bar"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "abgedreht",
+        "maclaren",
+        "eleven-n-lounge"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "ashoor",
+        "salamas-bar",
+        "freibeuter"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "fargo",
+        "zgk",
+        "bagatelle"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "bar-bautrockner",
+        "steppender-baer",
+        "krueger-eck"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "hops-barley",
+        "sieben",
+        "privatbrauerei-schalander"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "gluehlampe",
+        "billard-house"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "honolulu",
+      "no": 1,
+      "name": "Honolulu",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "",
+      "lat": 52.50449,
+      "lon": 13.44789
+    },
+    {
+      "id": "zum-schmutzigen-hobby",
+      "no": 2,
+      "name": "Zum schmutzigen Hobby",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Revaler Str. 99 - Tor 2",
+      "lat": 52.507939,
+      "lon": 13.453505
+    },
+    {
+      "id": "ginchilla-bar",
+      "no": 3,
+      "name": "GinChilla Bar",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Warschauer Str. 33",
+      "lat": 52.507934,
+      "lon": 13.450141
+    },
+    {
+      "id": "molly-malones",
+      "no": 4,
+      "name": "Molly Malones",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Torellstr. 1",
+      "lat": 52.511164,
+      "lon": 13.447004
+    },
+    {
+      "id": "bier-bar",
+      "no": 5,
+      "name": "Bier-Bar",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "",
+      "lat": 52.510467,
+      "lon": 13.452668
+    },
+    {
+      "id": "abgedreht",
+      "no": 6,
+      "name": "Abgedreht",
+      "type": "bar",
+      "group": "pink",
+      "address": "",
+      "lat": 52.51572,
+      "lon": 13.452042
+    },
+    {
+      "id": "maclaren",
+      "no": 7,
+      "name": "MacLaren",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Boxhagener Str. 16",
+      "lat": 52.513512,
+      "lon": 13.455196
+    },
+    {
+      "id": "eleven-n-lounge",
+      "no": 8,
+      "name": "eleven n lounge",
+      "type": "bar",
+      "group": "pink",
+      "address": "Grünberger Str. 60",
+      "lat": 52.511681,
+      "lon": 13.456422
+    },
+    {
+      "id": "ashoor",
+      "no": 9,
+      "name": "Ashoor",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Wühlischstr. 32",
+      "lat": 52.509824,
+      "lon": 13.456985
+    },
+    {
+      "id": "salamas-bar",
+      "no": 10,
+      "name": "Salamas Bar",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Niederbarnimstr. 24",
+      "lat": 52.51434,
+      "lon": 13.459623
+    },
+    {
+      "id": "freibeuter",
+      "no": 11,
+      "name": "Freibeuter",
+      "type": "bar",
+      "group": "orange",
+      "address": "Silvio-Meier-Str. 10",
+      "lat": 52.516174,
+      "lon": 13.463349
+    },
+    {
+      "id": "fargo",
+      "no": 12,
+      "name": "Fargo",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Grünberger Str. 77",
+      "lat": 52.511347,
+      "lon": 13.460045
+    },
+    {
+      "id": "zgk",
+      "no": 13,
+      "name": "ZGK",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Scharnweberstr. 38",
+      "lat": 52.512812,
+      "lon": 13.464115
+    },
+    {
+      "id": "bagatelle",
+      "no": 14,
+      "name": "Bagatelle",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Frankfurter Allee 72",
+      "lat": 52.514185,
+      "lon": 13.467761
+    },
+    {
+      "id": "bar-bautrockner",
+      "no": 15,
+      "name": "BAR BAUTROCKNER",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Jungstr. 29",
+      "lat": 52.511993,
+      "lon": 13.466548
+    },
+    {
+      "id": "steppender-baer",
+      "no": 16,
+      "name": "Steppender Bär",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "",
+      "lat": 52.510052,
+      "lon": 13.464106
+    },
+    {
+      "id": "krueger-eck",
+      "no": 17,
+      "name": "Krüger Eck",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Weserstr. 12",
+      "lat": 52.509529,
+      "lon": 13.468034
+    },
+    {
+      "id": "hops-barley",
+      "no": 18,
+      "name": "Hops & Barley",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Wühlischstr. 22/23",
+      "lat": 52.508947,
+      "lon": 13.460623
+    },
+    {
+      "id": "sieben",
+      "no": 19,
+      "name": "Sieben",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Sonntagstr. 7",
+      "lat": 52.505345,
+      "lon": 13.467011
+    },
+    {
+      "id": "privatbrauerei-schalander",
+      "no": 20,
+      "name": "Privatbrauerei Schalander",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Revaler Str. 99",
+      "lat": 52.507034,
+      "lon": 13.456939
+    },
+    {
+      "id": "gluehlampe",
+      "no": 21,
+      "name": "Glühlampe",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Lehmbruckstr. 1",
+      "lat": 52.503894,
+      "lon": 13.453811
+    },
+    {
+      "id": "billard-house",
+      "no": 22,
+      "name": "Billard House",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 52.504772,
+      "lon": 13.450899
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "my KIOSK 2 Café",
+      "lat": 52.516212,
+      "lon": 13.455172,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Käptn Kiez, Sonntagstr. 27",
+      "lat": 52.506122,
+      "lon": 13.465527,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "Immer 365 Coffee & Snacks",
+      "lat": 52.505384,
+      "lon": 13.4493,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Kiosk & Bakery [+ DPD Paketshop], Gubener Str. 23",
+      "lat": 52.510739,
+      "lon": 13.449203,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "himmelreich",
+      "name": "Himmelreich",
+      "address": "Simon-Dach-Str. 36",
+      "lat": 52.510258,
+      "lon": 13.456621
+    },
+    {
+      "id": "die-tagung",
+      "name": "Die Tagung",
+      "address": "",
+      "lat": 52.509504,
+      "lon": 13.45836
+    },
+    {
+      "id": "troy",
+      "name": "Troy",
+      "address": "Simon-Dach-Str. 14",
+      "lat": 52.510081,
+      "lon": 13.456003
+    },
+    {
+      "id": "hase",
+      "name": "HASE",
+      "address": "Gabriel-Max-Str. 3",
+      "lat": 52.509949,
+      "lon": 13.458277
+    },
+    {
+      "id": "badfish",
+      "name": "Badfish",
+      "address": "",
+      "lat": 52.510543,
+      "lon": 13.457772
+    },
+    {
+      "id": "kaia",
+      "name": "Kaia",
+      "address": "",
+      "lat": 52.50989,
+      "lon": 13.455196
+    },
+    {
+      "id": "primitiv-bar",
+      "name": "Primitiv Bar",
+      "address": "Simon-Dach-Str. 28",
+      "lat": 52.508589,
+      "lon": 13.455768
+    },
+    {
+      "id": "paule-s-metal-eck",
+      "name": "Paule's Metal Eck",
+      "address": "Krossener Str. 15",
+      "lat": 52.510686,
+      "lon": 13.456821
+    }
+  ]
+}

@@ -1,0 +1,417 @@
+{
+  "game": "Kneipenmonopoly Kwartier Latäng",
+  "city": "Köln",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      50.925063,
+      6.92981
+    ],
+    [
+      50.925063,
+      6.95119
+    ],
+    [
+      50.938537,
+      6.95119
+    ],
+    [
+      50.938537,
+      6.92981
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "biergarten-rathenauplatz-veedelstreff",
+        "redrum-rockbar"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "joode-lade",
+        "zino-s-spritz",
+        "die-oper"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "rosa",
+        "rotana",
+        "schampanja"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "bogletti",
+        "reissdorf-am-hahnentor",
+        "whnbar"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "md-bar",
+        "thiebolds-eck",
+        "im-leuchtturm"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "die-gockel-im-teichmann",
+        "metronom",
+        "crazy-ball-billardcafe"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "spritz",
+        "little-lui",
+        "the-black-banshee"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "lux-88",
+        "gilbert-s-pinte"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "biergarten-rathenauplatz-veedelstreff",
+      "no": 1,
+      "name": "Biergarten Rathenauplatz Veedelstreff",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Rathenauplatz 30",
+      "lat": 50.931336,
+      "lon": 6.936973
+    },
+    {
+      "id": "redrum-rockbar",
+      "no": 2,
+      "name": "Redrum Rockbar",
+      "type": "bar",
+      "group": "braun",
+      "address": "Lindenstr. 94",
+      "lat": 50.931906,
+      "lon": 6.932383
+    },
+    {
+      "id": "joode-lade",
+      "no": 3,
+      "name": "Joode Lade",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "",
+      "lat": 50.933294,
+      "lon": 6.934632
+    },
+    {
+      "id": "zino-s-spritz",
+      "no": 4,
+      "name": "Zino's Spritz",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "Moltkestr. 65a",
+      "lat": 50.936409,
+      "lon": 6.932392
+    },
+    {
+      "id": "die-oper",
+      "no": 5,
+      "name": "Die Oper",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Händelstr. 14",
+      "lat": 50.934759,
+      "lon": 6.936574
+    },
+    {
+      "id": "rosa",
+      "no": 6,
+      "name": "ROSA",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Brüsseler Platz 1",
+      "lat": 50.938337,
+      "lon": 6.935096
+    },
+    {
+      "id": "rotana",
+      "no": 7,
+      "name": "Rotana",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "",
+      "lat": 50.937093,
+      "lon": 6.938156
+    },
+    {
+      "id": "schampanja",
+      "no": 8,
+      "name": "Schampanja",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "",
+      "lat": 50.934333,
+      "lon": 6.940549
+    },
+    {
+      "id": "bogletti",
+      "no": 9,
+      "name": "Bogletti",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 50.93801,
+      "lon": 6.940725
+    },
+    {
+      "id": "reissdorf-am-hahnentor",
+      "no": 10,
+      "name": "Reissdorf am Hahnentor",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "",
+      "lat": 50.936329,
+      "lon": 6.940923
+    },
+    {
+      "id": "whnbar",
+      "no": 11,
+      "name": "Whnbar",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 50.936998,
+      "lon": 6.943569
+    },
+    {
+      "id": "md-bar",
+      "no": 12,
+      "name": "MD Bar",
+      "type": "bar",
+      "group": "rot",
+      "address": "Marsilstein 21-23",
+      "lat": 50.935095,
+      "lon": 6.943581
+    },
+    {
+      "id": "thiebolds-eck",
+      "no": 13,
+      "name": "Thiebolds Eck",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "",
+      "lat": 50.934847,
+      "lon": 6.947903
+    },
+    {
+      "id": "im-leuchtturm",
+      "no": 14,
+      "name": "Im Leuchtturm",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Mauritiussteinweg 70",
+      "lat": 50.93318,
+      "lon": 6.945296
+    },
+    {
+      "id": "die-gockel-im-teichmann",
+      "no": 15,
+      "name": "Die Gockel im Teichmann",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Jahnstr. 34",
+      "lat": 50.931846,
+      "lon": 6.941857
+    },
+    {
+      "id": "metronom",
+      "no": 16,
+      "name": "Metronom",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Weyerstr. 59",
+      "lat": 50.930394,
+      "lon": 6.943631
+    },
+    {
+      "id": "crazy-ball-billardcafe",
+      "no": 17,
+      "name": "Crazy Ball Billardcafe",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Trierer Str. 10",
+      "lat": 50.927815,
+      "lon": 6.946335
+    },
+    {
+      "id": "spritz",
+      "no": 18,
+      "name": "Spritz",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Trierer Str. 41",
+      "lat": 50.927545,
+      "lon": 6.942286
+    },
+    {
+      "id": "little-lui",
+      "no": 19,
+      "name": "Little Lui",
+      "type": "bar",
+      "group": "gruen",
+      "address": "Luxemburger Str. 43",
+      "lat": 50.926999,
+      "lon": 6.939607
+    },
+    {
+      "id": "the-black-banshee",
+      "no": 20,
+      "name": "The Black Banshee",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Kyffhäuserstr. 25",
+      "lat": 50.928723,
+      "lon": 6.939064
+    },
+    {
+      "id": "lux-88",
+      "no": 21,
+      "name": "Lux 88",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 50.92529,
+      "lon": 6.937317
+    },
+    {
+      "id": "gilbert-s-pinte",
+      "no": 22,
+      "name": "Gilbert's Pinte",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 50.93058,
+      "lon": 6.939077
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Happy Shop",
+      "lat": 50.938247,
+      "lon": 6.937904,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Büdche met Hätz",
+      "lat": 50.931575,
+      "lon": 6.949912,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "Onkel's Kiosk, Gabelsbergerstr. 53",
+      "lat": 50.926232,
+      "lon": 6.938711,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Linden Kiosk, Lindenstr. 82",
+      "lat": 50.932513,
+      "lon": 6.93342,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "engelbaet",
+      "name": "Engelbät",
+      "address": "Engelbertstr. 7",
+      "lat": 50.931011,
+      "lon": 6.939032
+    },
+    {
+      "id": "buskers",
+      "name": "Buskers",
+      "address": "Beethovenstr. 17-19",
+      "lat": 50.932152,
+      "lon": 6.938278
+    },
+    {
+      "id": "flotte",
+      "name": "Flotte",
+      "address": "",
+      "lat": 50.929836,
+      "lon": 6.939777
+    },
+    {
+      "id": "kwartier",
+      "name": "Kwartier",
+      "address": "Zülpicher Str. 10",
+      "lat": 50.930059,
+      "lon": 6.93867
+    },
+    {
+      "id": "barbarossa-schaenke",
+      "name": "Barbarossa Schänke",
+      "address": "Weyerstr. 73",
+      "lat": 50.930181,
+      "lon": 6.942982
+    },
+    {
+      "id": "samuel-s-shep",
+      "name": "Samuel´s Shep",
+      "address": "Rathenauplatz 5",
+      "lat": 50.930648,
+      "lon": 6.937418
+    },
+    {
+      "id": "rosebud",
+      "name": "Rosebud",
+      "address": "Heinsbergstr. 20",
+      "lat": 50.93007,
+      "lon": 6.938012
+    },
+    {
+      "id": "hillebrands",
+      "name": "Hillebrands",
+      "address": "Zülpicher Str. 26",
+      "lat": 50.929597,
+      "lon": 6.937837
+    }
+  ]
+}

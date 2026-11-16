@@ -1,0 +1,417 @@
+{
+  "game": "Kneipenmonopoly St. Pauli",
+  "city": "Hamburg",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      53.545763,
+      9.950159
+    ],
+    [
+      53.545763,
+      9.972841
+    ],
+    [
+      53.559237,
+      9.972841
+    ],
+    [
+      53.559237,
+      9.950159
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "thomas-read-irish-pub",
+        "clockers-bar-st-pauli"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "tower-6",
+        "the-local",
+        "hummel-quiddje"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "bernsteinbar",
+        "mutter",
+        "eldorado"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "karo-beach",
+        "shamrock-irish-pub",
+        "1910-e-v-weinbar"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "pamukkale",
+        "zwick",
+        "tippel-ii"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "tower-bar",
+        "dock-3-beachclub",
+        "david-quelle"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "strandpauli",
+        "locke",
+        "utspann"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "christiansen-s",
+        "holsten-schwemme"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "thomas-read-irish-pub",
+      "no": 1,
+      "name": "Thomas Read Irish Pub",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Nobistor 10",
+      "lat": 53.550071,
+      "lon": 9.95664
+    },
+    {
+      "id": "clockers-bar-st-pauli",
+      "no": 2,
+      "name": "clockers BAR St. Pauli",
+      "type": "bar",
+      "group": "braun",
+      "address": "Paul-Roosen-Str. 27",
+      "lat": 53.553088,
+      "lon": 9.958022
+    },
+    {
+      "id": "tower-6",
+      "no": 3,
+      "name": "Tower 6",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "",
+      "lat": 53.555105,
+      "lon": 9.954799
+    },
+    {
+      "id": "the-local",
+      "no": 4,
+      "name": "The Local",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "",
+      "lat": 53.557632,
+      "lon": 9.954897
+    },
+    {
+      "id": "hummel-quiddje",
+      "no": 5,
+      "name": "Hummel & Quiddje",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "",
+      "lat": 53.555952,
+      "lon": 9.95806
+    },
+    {
+      "id": "bernsteinbar",
+      "no": 6,
+      "name": "BernSteinbar",
+      "type": "bar",
+      "group": "pink",
+      "address": "Bernstorffstr. 103",
+      "lat": 53.557944,
+      "lon": 9.958484
+    },
+    {
+      "id": "mutter",
+      "no": 7,
+      "name": "Mutter",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Stresemannstr. 11",
+      "lat": 53.558978,
+      "lon": 9.962645
+    },
+    {
+      "id": "eldorado",
+      "no": 8,
+      "name": "Eldorado",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Wohlwillstr. 50",
+      "lat": 53.555948,
+      "lon": 9.9629
+    },
+    {
+      "id": "karo-beach",
+      "no": 9,
+      "name": "Karo Beach",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "",
+      "lat": 53.557024,
+      "lon": 9.966985
+    },
+    {
+      "id": "shamrock-irish-pub",
+      "no": 10,
+      "name": "Shamrock Irish Pub",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Glashüttenstr. 116",
+      "lat": 53.557333,
+      "lon": 9.972728
+    },
+    {
+      "id": "1910-e-v-weinbar",
+      "no": 11,
+      "name": "1910 e.V. Weinbar",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 53.554546,
+      "lon": 9.968993
+    },
+    {
+      "id": "pamukkale",
+      "no": 12,
+      "name": "Pamukkale",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "",
+      "lat": 53.552312,
+      "lon": 9.962893
+    },
+    {
+      "id": "zwick",
+      "no": 13,
+      "name": "Zwick",
+      "type": "bar",
+      "group": "rot",
+      "address": "Millerntorplatz 1",
+      "lat": 53.550623,
+      "lon": 9.969368
+    },
+    {
+      "id": "tippel-ii",
+      "no": 14,
+      "name": "Tippel II",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Detlev-Bremer-Str. 46",
+      "lat": 53.550552,
+      "lon": 9.964657
+    },
+    {
+      "id": "tower-bar",
+      "no": 15,
+      "name": "Tower Bar",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "",
+      "lat": 53.546842,
+      "lon": 9.969483
+    },
+    {
+      "id": "dock-3-beachclub",
+      "no": 16,
+      "name": "Dock 3 Beachclub",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "",
+      "lat": 53.545991,
+      "lon": 9.965525
+    },
+    {
+      "id": "david-quelle",
+      "no": 17,
+      "name": "David Quelle",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "",
+      "lat": 53.54893,
+      "lon": 9.96233
+    },
+    {
+      "id": "strandpauli",
+      "no": 18,
+      "name": "StrandPauli",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "St. Pauli Hafenstr. 89",
+      "lat": 53.546008,
+      "lon": 9.962057
+    },
+    {
+      "id": "locke",
+      "no": 19,
+      "name": "Locke",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "St. Pauli Fischmarkt 27",
+      "lat": 53.546186,
+      "lon": 9.957803
+    },
+    {
+      "id": "utspann",
+      "no": 20,
+      "name": "Utspann",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "",
+      "lat": 53.550627,
+      "lon": 9.96001
+    },
+    {
+      "id": "christiansen-s",
+      "no": 21,
+      "name": "Christiansen's",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "",
+      "lat": 53.546365,
+      "lon": 9.954148
+    },
+    {
+      "id": "holsten-schwemme",
+      "no": 22,
+      "name": "Holsten-Schwemme",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Herrenweide 2a",
+      "lat": 53.548281,
+      "lon": 9.955979
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Kiosk Schanze",
+      "lat": 53.559096,
+      "lon": 9.96382,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Pinar Kiosk, Marktstr. 129",
+      "lat": 53.558503,
+      "lon": 9.972569,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "Kiez Crush",
+      "lat": 53.546977,
+      "lon": 9.961405,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Aral-Tankstelle",
+      "lat": 53.549439,
+      "lon": 9.952762,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "toom-peerstall",
+      "name": "Toom Peerstall",
+      "address": "",
+      "lat": 53.552425,
+      "lon": 9.961765
+    },
+    {
+      "id": "bar-wohlzimmer",
+      "name": "Bar Wohlzimmer",
+      "address": "Wohlwillstr. 2",
+      "lat": 53.55276,
+      "lon": 9.961079
+    },
+    {
+      "id": "collab",
+      "name": "Collab",
+      "address": "Hein-Hoyer-Str. 63",
+      "lat": 53.553121,
+      "lon": 9.962823
+    },
+    {
+      "id": "blauer-peter",
+      "name": "Blauer Peter",
+      "address": "",
+      "lat": 53.551248,
+      "lon": 9.961069
+    },
+    {
+      "id": "in-exile",
+      "name": "In Exile",
+      "address": "",
+      "lat": 53.551179,
+      "lon": 9.961793
+    },
+    {
+      "id": "st-pauli-eck",
+      "name": "St. Pauli Eck",
+      "address": "Simon-von-Utrecht-Str. 87",
+      "lat": 53.551095,
+      "lon": 9.962503
+    },
+    {
+      "id": "tortuga-bar",
+      "name": "Tortuga Bar",
+      "address": "Bleicherstr. 27",
+      "lat": 53.553881,
+      "lon": 9.96021
+    },
+    {
+      "id": "nachthafen",
+      "name": "Nachthafen",
+      "address": "Clemens-Schultz-Str. 93",
+      "lat": 53.552383,
+      "lon": 9.96434
+    }
+  ]
+}

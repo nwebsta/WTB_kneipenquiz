@@ -1,0 +1,403 @@
+{
+  "game": "Kneipenmonopoly Bermudadreieck",
+  "city": "Bochum",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      51.472263,
+      7.207682
+    ],
+    [
+      51.472263,
+      7.229318
+    ],
+    [
+      51.485737,
+      7.229318
+    ],
+    [
+      51.485737,
+      7.207682
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "intershop",
+        "hopfenklause"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "neuland",
+        "absinth",
+        "zur-postkutsche"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "rote-laterne",
+        "gasthaus-am-westring",
+        "zanke"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "li-buddah",
+        "river",
+        "zur-altstadt"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "dorfbrunnen",
+        "trallaffitti",
+        "hopfendolde"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "zentral-caffe-bar",
+        "zitronenhai",
+        "jago"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "freibeuter",
+        "goldkante",
+        "mississippi"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "brinkhoffs-no1",
+        "le-kork"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "intershop",
+      "no": 1,
+      "name": "Intershop",
+      "type": "bar",
+      "group": "braun",
+      "address": "Viktoriastr. 53a",
+      "lat": 51.477372,
+      "lon": 7.215731
+    },
+    {
+      "id": "hopfenklause",
+      "no": 2,
+      "name": "Hopfenklause",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Schmidtstr. 52",
+      "lat": 51.477479,
+      "lon": 7.211396
+    },
+    {
+      "id": "neuland",
+      "no": 3,
+      "name": "Neuland",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Rottstr. 15",
+      "lat": 51.479199,
+      "lon": 7.212258
+    },
+    {
+      "id": "absinth",
+      "no": 4,
+      "name": "Absinth",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Rottstr. 24",
+      "lat": 51.479684,
+      "lon": 7.210596
+    },
+    {
+      "id": "zur-postkutsche",
+      "no": 5,
+      "name": "Zur Postkutsche",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Viktoriastr. 16",
+      "lat": 51.479655,
+      "lon": 7.215522
+    },
+    {
+      "id": "rote-laterne",
+      "no": 6,
+      "name": "Rote Laterne",
+      "type": "bar",
+      "group": "pink",
+      "address": "Gußstahlstr. 40",
+      "lat": 51.482053,
+      "lon": 7.20903
+    },
+    {
+      "id": "gasthaus-am-westring",
+      "no": 7,
+      "name": "Gasthaus am Westring",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Westring 29",
+      "lat": 51.481826,
+      "lon": 7.212396
+    },
+    {
+      "id": "zanke",
+      "no": 8,
+      "name": "Zanke",
+      "type": "bar",
+      "group": "pink",
+      "address": "Westring 41",
+      "lat": 51.482751,
+      "lon": 7.211546
+    },
+    {
+      "id": "li-buddah",
+      "no": 9,
+      "name": "li buddah",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 51.485626,
+      "lon": 7.217343
+    },
+    {
+      "id": "river",
+      "no": 10,
+      "name": "River",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 51.485204,
+      "lon": 7.218866
+    },
+    {
+      "id": "zur-altstadt",
+      "no": 11,
+      "name": "Zur Altstadt",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Pariser Str. 40",
+      "lat": 51.481572,
+      "lon": 7.219209
+    },
+    {
+      "id": "dorfbrunnen",
+      "no": 12,
+      "name": "Dorfbrunnen",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Trankgasse 2",
+      "lat": 51.480039,
+      "lon": 7.221363
+    },
+    {
+      "id": "trallaffitti",
+      "no": 13,
+      "name": "Trallaffitti",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Ostring 36",
+      "lat": 51.480629,
+      "lon": 7.224046
+    },
+    {
+      "id": "hopfendolde",
+      "no": 14,
+      "name": "Hopfendolde",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Kurt-Schumacher-Platz 10",
+      "lat": 51.479741,
+      "lon": 7.222427
+    },
+    {
+      "id": "zentral-caffe-bar",
+      "no": 15,
+      "name": "Zentral – Caffé Bar",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Luisenstr. 15-17",
+      "lat": 51.478916,
+      "lon": 7.219074
+    },
+    {
+      "id": "zitronenhai",
+      "no": 16,
+      "name": "Zitronenhai",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Oskar-Hoffmann-Str. 97",
+      "lat": 51.474227,
+      "lon": 7.22606
+    },
+    {
+      "id": "jago",
+      "no": 17,
+      "name": "JAGO",
+      "type": "kneipe",
+      "group": "gelb",
+      "address": "Saladin-Schmitt-Str. 1",
+      "lat": 51.47285,
+      "lon": 7.217354
+    },
+    {
+      "id": "freibeuter",
+      "no": 18,
+      "name": "Freibeuter",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Kortumstr. 2-4",
+      "lat": 51.476042,
+      "lon": 7.216362
+    },
+    {
+      "id": "goldkante",
+      "no": 19,
+      "name": "Goldkante",
+      "type": "bar",
+      "group": "gruen",
+      "address": "Alte Hattinger Str. 22",
+      "lat": 51.47374,
+      "lon": 7.214583
+    },
+    {
+      "id": "mississippi",
+      "no": 20,
+      "name": "Mississippi",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Kortumstr. 16",
+      "lat": 51.476699,
+      "lon": 7.216769
+    },
+    {
+      "id": "brinkhoffs-no1",
+      "no": 21,
+      "name": "Brinkhoffs No1",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Brüderstr. 13",
+      "lat": 51.477646,
+      "lon": 7.217447
+    },
+    {
+      "id": "le-kork",
+      "no": 22,
+      "name": "Le Kork",
+      "type": "bar",
+      "group": "dunkelblau",
+      "address": "Am Kulturgleis 1",
+      "lat": 51.474922,
+      "lon": 7.214654
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Bergbau Späti, Nordring 52",
+      "lat": 51.485315,
+      "lon": 7.216671,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Alsenbude, Alsenstr. 30",
+      "lat": 51.47602,
+      "lon": 7.228002,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "Kiosk Bermuda 1848, Viktoriastr. 65",
+      "lat": 51.476736,
+      "lon": 7.215674,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "STM Kiosk - Erfrischungen, Tabak, Zeitschriften, Annastr. 27",
+      "lat": 51.478504,
+      "lon": 7.209414,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "bar-narodowa",
+      "name": "Bar Narodowa",
+      "address": "Brüderstr. 6",
+      "lat": 51.478204,
+      "lon": 7.217785
+    },
+    {
+      "id": "tropitone",
+      "name": "Tropitone",
+      "address": "",
+      "lat": 51.478431,
+      "lon": 7.219769
+    },
+    {
+      "id": "cubana",
+      "name": "Cubana",
+      "address": "Kreuzstr. 6",
+      "lat": 51.477156,
+      "lon": 7.217511
+    },
+    {
+      "id": "cafe-konkret",
+      "name": "Café Konkret",
+      "address": "Kortumstr. 19-21",
+      "lat": 51.477365,
+      "lon": 7.21656
+    },
+    {
+      "id": "pearlz-by-serkar-barzani",
+      "name": "Pearlz by Serkar Barzani",
+      "address": "Konrad-Adenauer-Platz 1",
+      "lat": 51.476121,
+      "lon": 7.21556
+    },
+    {
+      "id": "kap",
+      "name": "KAP",
+      "address": "",
+      "lat": 51.475716,
+      "lon": 7.21597
+    }
+  ]
+}

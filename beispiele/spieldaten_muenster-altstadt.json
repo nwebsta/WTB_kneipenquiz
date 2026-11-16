@@ -1,0 +1,417 @@
+{
+  "game": "Kneipenmonopoly Kuhviertel & Altstadt",
+  "city": "Münster",
+  "coordinates": "WGS84, aus OpenStreetMap (© OpenStreetMap-Mitwirkende, ODbL), automatisch ausgewählt, Stand 16.11.2026. Nicht vor Ort geprüft!",
+  "boundary": [
+    [
+      51.956063,
+      7.614066
+    ],
+    [
+      51.956063,
+      7.635934
+    ],
+    [
+      51.969537,
+      7.635934
+    ],
+    [
+      51.969537,
+      7.614066
+    ]
+  ],
+  "groups": [
+    {
+      "id": "braun",
+      "name": "Braun",
+      "color": "#8b5a2b",
+      "field_ids": [
+        "das-piano",
+        "destille"
+      ]
+    },
+    {
+      "id": "hellblau",
+      "name": "Hellblau",
+      "color": "#7cc8ec",
+      "field_ids": [
+        "davidwache",
+        "whimsy",
+        "das-blaue-haus"
+      ]
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "color": "#d6338f",
+      "field_ids": [
+        "lowinerei",
+        "buddenturm",
+        "alter-pulverturm"
+      ]
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "color": "#f28c1c",
+      "field_ids": [
+        "mocambo-bar",
+        "the-james",
+        "bullenkopp"
+      ]
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "color": "#e2231a",
+      "field_ids": [
+        "johann-conrad",
+        "lieschen-mueller",
+        "der-bunte-vogel"
+      ]
+    },
+    {
+      "id": "gelb",
+      "name": "Gelb",
+      "color": "#f5d90a",
+      "field_ids": [
+        "walk-of-fame",
+        "bar-madame",
+        "prinzibar"
+      ]
+    },
+    {
+      "id": "gruen",
+      "name": "Grün",
+      "color": "#1a9e52",
+      "field_ids": [
+        "whisky-dungeon",
+        "toeddenhoek",
+        "dock-bar"
+      ]
+    },
+    {
+      "id": "dunkelblau",
+      "name": "Dunkelblau",
+      "color": "#0b5fa8",
+      "field_ids": [
+        "ricks-cafe",
+        "pavillon"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "das-piano",
+      "no": 1,
+      "name": "Das Piano",
+      "type": "kneipe",
+      "group": "braun",
+      "address": "Frauenstr. 46",
+      "lat": 51.963806,
+      "lon": 7.621212
+    },
+    {
+      "id": "destille",
+      "no": 2,
+      "name": "Destille",
+      "type": "bar",
+      "group": "braun",
+      "address": "Kuhstr. 10",
+      "lat": 51.965669,
+      "lon": 7.619249
+    },
+    {
+      "id": "davidwache",
+      "no": 3,
+      "name": "Davidwache",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Münzstr. 49",
+      "lat": 51.966512,
+      "lon": 7.618182
+    },
+    {
+      "id": "whimsy",
+      "no": 4,
+      "name": "Whimsy",
+      "type": "bar",
+      "group": "hellblau",
+      "address": "",
+      "lat": 51.965169,
+      "lon": 7.621294
+    },
+    {
+      "id": "das-blaue-haus",
+      "no": 5,
+      "name": "Das Blaue Haus",
+      "type": "kneipe",
+      "group": "hellblau",
+      "address": "Kreuzstr. 16",
+      "lat": 51.966187,
+      "lon": 7.621368
+    },
+    {
+      "id": "lowinerei",
+      "no": 6,
+      "name": "LOWINEREI",
+      "type": "bar",
+      "group": "pink",
+      "address": "",
+      "lat": 51.969447,
+      "lon": 7.619501
+    },
+    {
+      "id": "buddenturm",
+      "no": 7,
+      "name": "Buddenturm",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "Buddenstr. 1",
+      "lat": 51.966052,
+      "lon": 7.623019
+    },
+    {
+      "id": "alter-pulverturm",
+      "no": 8,
+      "name": "Alter Pulverturm",
+      "type": "kneipe",
+      "group": "pink",
+      "address": "",
+      "lat": 51.967056,
+      "lon": 7.626322
+    },
+    {
+      "id": "mocambo-bar",
+      "no": 9,
+      "name": "Mocambo Bar",
+      "type": "bar",
+      "group": "orange",
+      "address": "",
+      "lat": 51.964705,
+      "lon": 7.630605
+    },
+    {
+      "id": "the-james",
+      "no": 10,
+      "name": "The James",
+      "type": "kneipe",
+      "group": "orange",
+      "address": "Hörsterstr. 27",
+      "lat": 51.965187,
+      "lon": 7.632519
+    },
+    {
+      "id": "bullenkopp",
+      "no": 11,
+      "name": "Bullenkopp",
+      "type": "bar",
+      "group": "orange",
+      "address": "Alter Fischmarkt 24",
+      "lat": 51.963529,
+      "lon": 7.629401
+    },
+    {
+      "id": "johann-conrad",
+      "no": 12,
+      "name": "Johann Conrad",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Sonnenstr. 82",
+      "lat": 51.963358,
+      "lon": 7.634198
+    },
+    {
+      "id": "lieschen-mueller",
+      "no": 13,
+      "name": "Lieschen Müller",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "",
+      "lat": 51.962272,
+      "lon": 7.63364
+    },
+    {
+      "id": "der-bunte-vogel",
+      "no": 14,
+      "name": "Der Bunte Vogel",
+      "type": "kneipe",
+      "group": "rot",
+      "address": "Alter Steinweg 41",
+      "lat": 51.961491,
+      "lon": 7.632125
+    },
+    {
+      "id": "walk-of-fame",
+      "no": 15,
+      "name": "Walk of Fame",
+      "type": "bar",
+      "group": "gelb",
+      "address": "",
+      "lat": 51.959771,
+      "lon": 7.635899
+    },
+    {
+      "id": "bar-madame",
+      "no": 16,
+      "name": "Bar Madame",
+      "type": "bar",
+      "group": "gelb",
+      "address": "",
+      "lat": 51.957913,
+      "lon": 7.63397
+    },
+    {
+      "id": "prinzibar",
+      "no": 17,
+      "name": "Prinzibar",
+      "type": "bar",
+      "group": "gelb",
+      "address": "Prinzipalmarkt 15",
+      "lat": 51.961192,
+      "lon": 7.627814
+    },
+    {
+      "id": "whisky-dungeon",
+      "no": 18,
+      "name": "Whisky Dungeon",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Verspoel 13",
+      "lat": 51.957646,
+      "lon": 7.628956
+    },
+    {
+      "id": "toeddenhoek",
+      "no": 19,
+      "name": "Töddenhoek",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Rothenburg 41",
+      "lat": 51.960717,
+      "lon": 7.625873
+    },
+    {
+      "id": "dock-bar",
+      "no": 20,
+      "name": "Dock Bar",
+      "type": "kneipe",
+      "group": "gruen",
+      "address": "Aegidiistr. 35",
+      "lat": 51.958096,
+      "lon": 7.621345
+    },
+    {
+      "id": "ricks-cafe",
+      "no": 21,
+      "name": "Rick’s Café",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Aegidiistr. 56",
+      "lat": 51.959144,
+      "lon": 7.622117
+    },
+    {
+      "id": "pavillon",
+      "no": 22,
+      "name": "Pavillon",
+      "type": "kneipe",
+      "group": "dunkelblau",
+      "address": "Hafenstr. 64",
+      "lat": 51.960624,
+      "lon": 7.622429
+    }
+  ],
+  "stations": [
+    {
+      "id": "bahnhof-nord",
+      "name": "Nordbahnhof",
+      "venue": "Day to Day - Kiosk, Neubrückenstr. 25",
+      "lat": 51.966235,
+      "lon": 7.629578,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-ost",
+      "name": "Ostbahnhof",
+      "venue": "Yorma’s",
+      "lat": 51.956733,
+      "lon": 7.63497,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-sued",
+      "name": "Südbahnhof",
+      "venue": "A. Lieder",
+      "lat": 51.958376,
+      "lon": 7.627211,
+      "verified_open": false
+    },
+    {
+      "id": "bahnhof-west",
+      "name": "Westbahnhof",
+      "venue": "Farids Kiosk",
+      "lat": 51.966093,
+      "lon": 7.618445,
+      "verified_open": false
+    }
+  ],
+  "reserve": [
+    {
+      "id": "luetkes-aperitivo-bar",
+      "name": "Lütkes Aperitivo Bar",
+      "address": "",
+      "lat": 51.960265,
+      "lon": 7.624868
+    },
+    {
+      "id": "alter-ego",
+      "name": "Alter Ego",
+      "address": "Bergstr. 30a",
+      "lat": 51.96575,
+      "lon": 7.62384
+    },
+    {
+      "id": "pinkulus",
+      "name": "Pinkulus",
+      "address": "Rosenplatz 6",
+      "lat": 51.965573,
+      "lon": 7.621898
+    },
+    {
+      "id": "atelier-bar",
+      "name": "Atelier Bar",
+      "address": "Bült 2",
+      "lat": 51.963896,
+      "lon": 7.630312
+    },
+    {
+      "id": "raphaels-weinbar",
+      "name": "Raphaels Weinbar",
+      "address": "Bült 3",
+      "lat": 51.96428,
+      "lon": 7.630595
+    },
+    {
+      "id": "haifisch-bar",
+      "name": "Haifisch-Bar",
+      "address": "Mauritzstr. 19",
+      "lat": 51.962497,
+      "lon": 7.632849
+    },
+    {
+      "id": "peacock",
+      "name": "Peacock",
+      "address": "Jüdefelderstr. 36",
+      "lat": 51.96595,
+      "lon": 7.618618
+    },
+    {
+      "id": "frueh-bis-spaet",
+      "name": "Früh bis spät",
+      "address": "Alter Steinweg 31",
+      "lat": 51.961797,
+      "lon": 7.633057
+    }
+  ]
+}
